@@ -1,5 +1,5 @@
-
 import mongoose, { Schema } from 'mongoose';
+import bcrypt from 'bcrypt';
 
 const userSchema = new Schema({
     fullName: {
@@ -22,7 +22,12 @@ const userSchema = new Schema({
         type: String,
         required: true,
         unique: true,
-        lowercase: true
+        lowercase: true,
+        index: true
+    },
+    password: {
+        type: String,
+        required: true
     },
     role: {
         type: String,
@@ -32,7 +37,51 @@ const userSchema = new Schema({
     isActive: {
         type: Boolean,
         default: true
+    },
+    refreshToken: {
+        type: String
     }
 },{timestamps: true})
+
+// NOTE: HASHING THE PASSWORD WHEN CREATED OR MODIFIED
+userSchema.pre("save", async function (next){
+    if (!this.isModified("password")) return next();
+
+    this.password = await bcrypt.hash(this.password, 10);
+    next();
+})
+
+// CHECKING IF THE PASSWORD IS CORRECT
+userSchema.methods.isPasswordCorrect = async function(password){
+    return await bcrypt.compare(password, this.password)
+}
+
+//NOTE: DATA TO GENERATE ACCESS TOKEN
+userSchema.methods.generateAccessToken = function(){
+    return jwt.sign(
+        {
+            _id: this._id,
+            email: this.email,
+            username: this.userName,
+            fullName: this.fullName
+        },
+        process.env.ACCESS_TOKEN_SECRET,
+        {
+            expiresIn: process.env.ACCESS_TOKEN_EXPIRY
+        }
+    )
+}
+
+userSchema.methods.generateRefreshToken = function(){
+    return jwt.sign(
+        {
+            _id: this._id
+        },
+        process.env.REFRESH_TOKEN_SECRET,
+        {
+            expiresIn: process.env.REFRESH_TOKEN_EXPIRY
+        }
+    )
+}
 
 export const User = mongoose.model('User', userSchema);
