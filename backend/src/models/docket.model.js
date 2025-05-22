@@ -1,20 +1,4 @@
-/**
- *   docketNo string
-  date date
-  origin string
-  destination string
-  paytype string
-  mode string
-  packType string
-  item string
-  clientDetails objectId client
-  paymentDetails objectId paymentDetails
-  docketStatus string
-  trackingLogs objectId[] trackingLogs
-  createdBy objectId user
-  createdAt date
-  updatedAt date
- */
+
 import mongoose, { Schema } from "mongoose";
 
 const docketSchema = new Schema({

@@ -62,7 +62,7 @@ userSchema.methods.generateAccessToken = function(){
         {
             _id: this._id,
             email: this.email,
-            username: this.userName,
+            username: this.username,
             fullName: this.fullName
         },
         process.env.ACCESS_TOKEN_SECRET,
@@ -83,5 +83,14 @@ userSchema.methods.generateRefreshToken = function(){
         }
     )
 }
+
+// NOTE: TRANSFORM SCHEMA TO REMOVE SENSITIVE DATA FROM JSON RESPONSE
+userSchema.set('toJSON', {
+    transform: function (doc, ret, options) {
+        delete ret.password;
+        delete ret.refreshToken;
+        return ret;
+    }
+});
 
 export const User = mongoose.model('User', userSchema);
