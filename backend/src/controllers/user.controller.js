@@ -16,6 +16,10 @@ const registerUser = asyncHandler( async (req, res) => {
         throw new ApiError(400, 'All fields are required');
     }
 
+    if (role && !['ADMIN', 'USER'].includes(role.toUpperCase())) {
+        throw new ApiError(400, "Invalid role specified. Allowed roles are 'ADMIN' or 'USER'.");
+    }
+
     const existedUser = await User.findOne({
         $or: [{username}, {email}]
     })
@@ -32,20 +36,23 @@ const registerUser = asyncHandler( async (req, res) => {
         phoneNumber,
         email,
         password,
-        role: role || 'USER'
+        role: role ? role.toUpperCase() : 'USER'
     })
 
     // feild not to be returned
-    // const newUser = await User.findById(user._id).select("-password -refreshToken")
+    const newUser = await User.findById(user._id).select("-password -refreshToken")
+
+    // console.log("New User Created: ", newUser);
+    
 
     // CHECKING IF THE USER IS CREATED
-    if (!user) {
+    if (!newUser) {
         throw new ApiError(500, "Failed to create a new user");
     }
 
     return res
     .status(201)
-    .json( new ApiResponse(201, user, "New User created Successfully"))
+    .json( new ApiResponse(201, newUser, "New User created Successfully"))
 })
 
 export {

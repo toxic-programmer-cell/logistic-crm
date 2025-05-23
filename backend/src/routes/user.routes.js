@@ -3,6 +3,6 @@ import { registerUser } from "../controllers/user.controller";
 
 const router = Router();
 
-router.route("/register").post(registerUser);
+router.route("/register").post(verifyJWT, registerUser);
 
 export default router;
