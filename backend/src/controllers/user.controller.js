@@ -3,6 +3,27 @@ import { ApiError } from "../utils/ApiError";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { User } from "../models/users.model.js";
 
+
+// GENERATING ACCESS AND REFRESH TOKENS
+const generateAccessAndRefreshToken = async (userId) => {
+    try {
+        const user = await User.findById(userId)
+    
+        if (!user) {
+            throw new ApiError(404, "User not found")
+        }
+    
+        const accessToken = user.generateAccessToken()
+        const refreshToken = user.generateRefreshToken()
+    
+        user.refreshToken = refreshToken
+        user.save(validateBeforeSave = false)
+        return { accessToken, refreshToken }
+    } catch (error) {
+        throw new ApiError(500, "Failed to generate tokens")
+    }
+}
+
 // NOTE: REGISTERING A NEW USER
 const registerUser = asyncHandler( async (req, res) => {
     const { fullName, username, phoneNumber, email, password, role } = req.body

@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
-import { User } from '../src/models/users.model.js'; // Adjust path if your model is elsewhere
-import { DB_NAME } from '../src/constants.js'; // Assuming DB_NAME is exported from constants.js
+import { User } from '../src/models/users.model.js';
+import { DB_NAME } from '../src/constants.js';
 
 // Load environment variables from .env file in the backend root
 dotenv.config({ path: '../.env' });
@@ -31,8 +31,7 @@ const seedAdmin = async () => {
             return; // Exit if admin already exists
         }
 
-        // --- Define your first admin user's details ---
-        // It's highly recommended to use environment variables for these in production
+        // --- First admin user's details ---
         const adminFullName = process.env.INITIAL_ADMIN_FULLNAME;
         const adminUsername = process.env.INITIAL_ADMIN_USERNAME;
         const adminPhoneNumber = process.env.INITIAL_ADMIN_PHONE;
@@ -45,13 +44,12 @@ const seedAdmin = async () => {
 
         console.log(`Creating initial admin user: ${adminUsername}`);
 
-        // The pre-save hook in your User model will hash the password automatically
         const newAdmin = await User.create({
             fullName: adminFullName,
             username: adminUsername.toLowerCase(),
             phoneNumber: adminPhoneNumber,
             email: adminEmail.toLowerCase(),
-            password: adminPassword, // Provide plain password here; model will hash it
+            password: adminPassword,
             role: 'ADMIN',
             isActive: true // Ensure the admin is active
         });
