@@ -20,7 +20,7 @@ const clientSchema = new Schema({
     },
     reciverClient: {
         type: Schema.Types.ObjectId,
-        ref: 'reciverClient'
+        ref: 'ReciverClient'
     }
 })
 
