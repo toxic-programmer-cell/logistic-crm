@@ -182,7 +182,7 @@ const getAllDockets = asyncHandler(async (req, res) => {
     );
 });
 
-// --- READ Single Docket by ID ---
+// --- READ Single Docket by Docket Number ---
 const getDocketByDocketNumber = asyncHandler(async (req, res) => {
     const { docketNumber } = req.params;
     if (!docketNumber || typeof docketNumber !== 'string' || docketNumber.trim() === "") {
