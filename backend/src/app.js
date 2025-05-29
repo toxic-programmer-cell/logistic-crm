@@ -22,6 +22,6 @@ import docketFormRouter from "./routes/docketForm.routes.js";
 
 // ROUTES
 app.use("/api/v1/users", userRouter)
-app.use("/api/v1/docket", docketFormRouter)
+app.use("/api/v1/dockets", docketFormRouter)
 
 export { app }

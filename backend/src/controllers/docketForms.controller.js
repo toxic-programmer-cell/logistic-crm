@@ -10,6 +10,23 @@ import { Branch } from "../models/branch.model.js";
 import { TrackingLog } from "../models/trackingLogs.model.js";
 import mongoose from "mongoose";
 
+// --- Helper function for populating docket details ---
+const populateDocketDetails = (query) => {
+    return query
+        .populate({
+            path: 'clientDetails',
+            populate: { path: 'reciverClient', model: 'ReciverClient' }
+        })
+        .populate({
+            path: 'paymentDetails',
+            populate: { path: 'gst', model: 'Gst' }
+        })
+        .populate('trackingLog')
+        .populate('createdBy', '-password -refreshToken');
+};
+
+
+// --- CREATE Full Docket Entry ---
 const createFullDocketEntry = asyncHandler(async (req, res) => {
     const {
         reciverClientData,
@@ -26,135 +43,347 @@ const createFullDocketEntry = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Docket, Client, PaymentDetail, and GST data are required.");
     }
 
-    // --- User Authentication Check (assuming middleware populates req.user) ---
+    // --- User Authentication Check ---
     const userId = req.user?._id;
     if (!userId) {
         throw new ApiError(401, "User not authenticated. Cannot create docket entry.");
     }
 
-    // --- Start of Creation Process (Consider Mongoose Sessions for transactions in production) ---
-    let newGst, newReciverClient, newClient, newPaymentDetail, newBranch, newTrackingLog, newDocket, populatedDocket;
+    // --- Comprehensive Input Validation ---
+    // GST Data Validation
+    if (!gstData || (gstData.sgst === undefined && gstData.sgst !== 0) || (gstData.cgst === undefined && gstData.cgst !== 0) || (gstData.igst === undefined && gstData.igst !== 0)) {
+        throw new ApiError(400, "SGST, CGST, and IGST values are required and must be valid numbers for GST details.");
+    }
+    // ReciverClient Data Validation (if provided)
+    if (reciverClientData && Object.keys(reciverClientData).length > 0) {
+        if (!reciverClientData.fullName || !reciverClientData.phoneNumber || !reciverClientData.address || !reciverClientData.gstNumber) {
+            throw new ApiError(400, "Full name, phone number, address, and GST number are required for Receiver Client if provided.");
+        }
+    }
+    // Client Data Validation
+    if (!clientData || !clientData.fullName || !clientData.phoneNumber || !clientData.address || !clientData.gstNumber) {
+        throw new ApiError(400, "Full name, phone number, address, and GST number are required for Client.");
+    }
+    // PaymentDetail Data Validation
+    if (!paymentDetailData) {
+        throw new ApiError(400, "PaymentDetail data is required.");
+    }
+    const requiredPaymentFields = ['declaredValue', 'vendor', 'vendorNumber', 'fwdNetwork', 'fwdNumber', 'pkts', 'actualWeight', 'chargeWeight', 'rate', 'frieghtOn', 'clearence', 'otherC', 'total'];
+    for (const field of requiredPaymentFields) {
+        const value = paymentDetailData[field];
+        const fieldSchema = PaymentDetail.schema.path(field);
+        if (value === undefined || value === null || (typeof value === 'string' && value.trim() === "")) {
+            if (fieldSchema instanceof mongoose.Schema.Types.Number && value === 0) continue;
+            throw new ApiError(400, `Field '${field}' is required and cannot be empty for Payment Details.`);
+        }
+    }
+    // Docket Data Validation
+    if (!docketData) {
+        throw new ApiError(400, "Docket data is required.");
+    }
+    const requiredDocketFields = ['docketNumber', 'origin', 'destination', 'payType', 'mode', 'packType', 'item', 'docketStatus'];
+    for (const field of requiredDocketFields) {
+        if (docketData[field] === undefined || docketData[field] === null || docketData[field]?.toString().trim() === "") {
+            throw new ApiError(400, `Field '${field}' is required and cannot be empty for Docket Details.`);
+        }
+    }
+
+    let newGst, newReciverClient, newClient, newPaymentDetail, newBranch, newTrackingLog, newDocket;
+    const session = await mongoose.startSession();
+    session.startTransaction();
 
     try {
-        // 1. Create Gst (dependency for PaymentDetail)
-        if (!gstData.sgst && gstData.sgst !== 0 || !gstData.cgst && gstData.cgst !== 0 || !gstData.igst && gstData.igst !== 0) {
-            throw new ApiError(400, "SGST, CGST, and IGST values are required for GST details.");
-        }
-        newGst = await Gst.create(gstData);
+        newGst = await Gst.create([gstData], { session });
+        newGst = newGst[0];
 
-        // 2. Create ReciverClient (optional, dependency for Client)
         if (reciverClientData && Object.keys(reciverClientData).length > 0) {
-            if (!reciverClientData.fullName || !reciverClientData.phoneNumber || !reciverClientData.address || !reciverClientData.gstNumber) {
-                throw new ApiError(400, "Full name, phone number, address, and GST number are required for Receiver Client if provided.");
-            }
-            newReciverClient = await ReciverClient.create(reciverClientData);
+            newReciverClient = await ReciverClient.create([reciverClientData], { session });
+            newReciverClient = newReciverClient[0];
         }
 
-        // 3. Create Client
-        if (!clientData.fullName || !clientData.phoneNumber || !clientData.address || !clientData.gstNumber) {
-            throw new ApiError(400, "Full name, phone number, address, and GST number are required for Client.");
-        }
         const clientPayload = { ...clientData };
         if (newReciverClient) {
             clientPayload.reciverClient = newReciverClient._id;
         }
-        newClient = await Client.create(clientPayload);
+        newClient = await Client.create([clientPayload], { session });
+        newClient = newClient[0];
 
-        // 4. Create PaymentDetail
-        const requiredPaymentFields = ['declaredValue', 'vendor', 'vendorNumber', 'fwdNetwork', 'fwdNumber', 'pkts', 'actualWeight', 'chargeWeight', 'rate', 'frieghtOn', 'clearence', 'otherC', 'total'];
-        for (const field of requiredPaymentFields) {
-            const value = paymentDetailData[field];
-            const fieldSchema = PaymentDetail.schema.path(field);
-            if (value === undefined || value === null || (typeof value === 'string' && value.trim() === "")) {
-                 if (fieldSchema instanceof mongoose.Schema.Types.Number && value === 0) continue; // Allow 0 for numbers
-                throw new ApiError(400, `Field '${field}' is required and cannot be empty for Payment Details.`);
-            }
-        }
-        const paymentDetailPayload = {
-            ...paymentDetailData,
-            gst: newGst._id
-        };
-        newPaymentDetail = await PaymentDetail.create(paymentDetailPayload);
+        const paymentDetailPayload = { ...paymentDetailData, gst: newGst._id };
+        newPaymentDetail = await PaymentDetail.create([paymentDetailPayload], { session });
+        newPaymentDetail = newPaymentDetail[0];
 
-        // 5. Create Branch (if data provided)
-        // This creates a new branch entry. Docket's origin/destination are strings per schema.
         if (branchData && branchData.name) {
-            newBranch = await Branch.create(branchData);
+            newBranch = await Branch.create([branchData], { session });
+            newBranch = newBranch[0];
         }
 
-        // 6. Create TrackingLog (if initial log data provided for the docket)
         if (trackingLogData && trackingLogData.status && trackingLogData.location) {
-            newTrackingLog = await TrackingLog.create(trackingLogData);
+            newTrackingLog = await TrackingLog.create([trackingLogData], { session });
+            newTrackingLog = newTrackingLog[0];
         }
 
-        // 7. Create Docket
-        const requiredDocketFields = ['docketNumber', 'origin', 'destination', 'payType', 'mode', 'packType', 'item', 'docketStatus'];
-        for (const field of requiredDocketFields) {
-           if (docketData[field] === undefined || docketData[field] === null || docketData[field]?.toString().trim() === "") {
-               throw new ApiError(400, `Field '${field}' is required and cannot be empty for Docket Details.`);
-           }
-        }
         const docketPayload = {
             ...docketData,
             clientDetails: newClient._id,
             paymentDetails: newPaymentDetail._id,
             createdBy: userId,
+            date: docketData.date ? new Date(docketData.date) : new Date(),
         };
         if (newTrackingLog) {
             docketPayload.trackingLog = newTrackingLog._id;
         }
-        if (docketData.date) {
-            docketPayload.date = new Date(docketData.date);
-        } else {
-            // If date is crucial and not provided, you might want to default it or throw error
-            // docketPayload.date = new Date(); // Example: default to now if not provided
-        }
-        newDocket = await Docket.create(docketPayload);
+        newDocket = await Docket.create([docketPayload], { session });
+        newDocket = newDocket[0];
 
-         // --- Populate the newly created docket for a richer response ---
-        populatedDocket = await Docket.findById(newDocket._id)
-            .populate({
-                path: 'clientDetails',
-                populate: {
-                    path: 'reciverClient', // Populate reciverClient within clientDetails
-                    model: 'ReciverClient'
-                }
-            })
-            .populate({
-                path: 'paymentDetails',
-                populate: {
-                    path: 'gst', // Populate gst within paymentDetails
-                    model: 'Gst'
-                }
-            })
-            .populate('trackingLog')
-            .populate('createdBy', '-password -refreshToken');
+        await session.commitTransaction();
+
+        const populatedDocket = await populateDocketDetails(Docket.findById(newDocket._id)).lean();
+        if (!populatedDocket) {
+             throw new ApiError(500, "Docket created but failed to retrieve for response.");
+        }
+
+        const createdData = {
+            docket: populatedDocket,
+            client: newClient.toObject(),
+            paymentDetail: newPaymentDetail.toObject(),
+            gst: newGst.toObject(),
+            ...(newReciverClient && { reciverClient: newReciverClient.toObject() }),
+            ...(newBranch && { branch: newBranch.toObject() }),
+            ...(newTrackingLog && { trackingLog: newTrackingLog.toObject() }),
+        };
+
+        return res.status(201).json(
+            new ApiResponse(201, createdData, "Docket entry and associated details created successfully.")
+        );
 
     } catch (error) {
-        // Basic error handling. In production, you'd implement transaction rollbacks.
-        // For now, if an error occurs, previously created documents will remain.
-        console.error("Error during combined form creation:", error);
-        if (error instanceof ApiError) {
-            throw error;
+        if (session.inTransaction()) {
+            await session.abortTransaction();
         }
-        throw new ApiError(500, error.message || "Failed to create all docket entries due to an internal error.");
+        console.error("Error during createFullDocketEntry:", error);
+        if (error instanceof ApiError) throw error;
+        throw new ApiError(500, error.message || "Failed to create docket entry. Transaction rolled back.");
+    } finally {
+        session.endSession();
+    }
+});
+
+// --- READ All Dockets ---
+const getAllDockets = asyncHandler(async (req, res) => {
+    // TODO: Add pagination, filtering, sorting options
+    const dockets = await populateDocketDetails(Docket.find({})).sort({ createdAt: -1 }).lean();
+
+    if (!dockets || dockets.length === 0) {
+        return res.status(200).json(new ApiResponse(200, [], "No dockets found."));
     }
 
-    // --- Prepare response ---
-    const createdData = {
-        docket: populatedDocket || newDocket,
-        client: newClient,
-        paymentDetail: newPaymentDetail,
-        gst: newGst,
-        ...(newReciverClient && { reciverClient: newReciverClient }),
-        ...(newBranch && { branch: newBranch }),
-        ...(newTrackingLog && { trackingLog: newTrackingLog }),
-    };
-    console.log("Created Data: ", createdData);
-
-    return res.status(201).json(
-        new ApiResponse(201, createdData, "Docket entry and associated details created successfully.")
+    return res.status(200).json(
+        new ApiResponse(200, dockets, "Dockets retrieved successfully.")
     );
 });
 
-export { createFullDocketEntry };
+// --- READ Single Docket by ID ---
+const getDocketByDocketNumber = asyncHandler(async (req, res) => {
+    const { docketNumber } = req.params;
+    if (!docketNumber || typeof docketNumber !== 'string' || docketNumber.trim() === "") {
+        throw new ApiError(400, "Docket number is required and must be a valid string.");
+    }
+
+    const docket = await populateDocketDetails(Docket.findOne({ docketNumber: docketNumber.trim() })).lean();
+
+
+    if (!docket) {
+        throw new ApiError(404, `Docket with number '${docketNumber}' not found.`);
+    }
+
+    return res.status(200).json(
+        new ApiResponse(200, docket, "Docket retrieved successfully.")
+    );
+});
+
+// --- UPDATE Full Docket Entry ---
+const updateFullDocketEntry = asyncHandler(async (req, res) => {
+    const { docketId } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(docketId)) {
+        throw new ApiError(400, "Invalid Docket ID format.");
+    }
+
+    const {
+        reciverClientData,
+        gstData,
+        paymentDetailData,
+        clientData,
+        docketData,
+        // branchData, // Branch updates are typically handled separately
+        trackingLogData
+    } = req.body;
+
+    if (Object.keys(req.body).length === 0) {
+        throw new ApiError(400, "No data provided for update.");
+    }
+    
+    const userId = req.user?._id; // For tracking who updated, if needed in docket schema
+
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+        const existingDocket = await Docket.findById(docketId).session(session);
+        if (!existingDocket) {
+            throw new ApiError(404, "Docket not found for update.");
+        }
+
+        // 1. Update Gst (if gstData provided)
+        if (gstData && Object.keys(gstData).length > 0) {
+            const paymentDetail = await PaymentDetail.findById(existingDocket.paymentDetails).session(session);
+            if (!paymentDetail || !paymentDetail.gst) {
+                throw new ApiError(404, "Associated PaymentDetail or GST record not found for update.");
+            }
+            await Gst.findByIdAndUpdate(paymentDetail.gst, gstData, { new: true, runValidators: true, session });
+        }
+
+        // 2. Update/Create ReciverClient (if reciverClientData provided)
+        let clientToUpdate = await Client.findById(existingDocket.clientDetails).session(session);
+        if (!clientToUpdate) {
+            throw new ApiError(404, "Associated Client record not found for update.");
+        }
+        if (reciverClientData && Object.keys(reciverClientData).length > 0) {
+            if (clientToUpdate.reciverClient) {
+                await ReciverClient.findByIdAndUpdate(clientToUpdate.reciverClient, reciverClientData, { new: true, runValidators: true, session });
+            } else {
+                const newReciver = await ReciverClient.create([reciverClientData], { session });
+                clientToUpdate.reciverClient = newReciver[0]._id;
+                // clientToUpdate will be saved later or as part of clientData update
+            }
+        }
+
+        // 3. Update Client (if clientData provided)
+        if (clientData && Object.keys(clientData).length > 0) {
+            // Ensure reciverClient _id from previous step is included if clientData doesn't explicitly set it
+            const clientUpdatePayload = { ...clientData };
+            if (clientToUpdate.reciverClient && !clientData.reciverClient) {
+                 clientUpdatePayload.reciverClient = clientToUpdate.reciverClient;
+            }
+            clientToUpdate = await Client.findByIdAndUpdate(existingDocket.clientDetails, clientUpdatePayload, { new: true, runValidators: true, session });
+        } else if (clientToUpdate.isModified('reciverClient')) { // Save client if only reciverClient was added
+            await clientToUpdate.save({ session });
+        }
+
+
+        // 4. Update PaymentDetail (if paymentDetailData provided)
+        if (paymentDetailData && Object.keys(paymentDetailData).length > 0) {
+            // gst field in paymentDetailData should not be updated directly here, it's handled by gstData
+            const { gst, ...restOfPaymentDetailData } = paymentDetailData;
+            await PaymentDetail.findByIdAndUpdate(existingDocket.paymentDetails, restOfPaymentDetailData, { new: true, runValidators: true, session });
+        }
+
+        // 5. Update/Create TrackingLog (if trackingLogData provided)
+        if (trackingLogData && Object.keys(trackingLogData).length > 0) {
+            if (existingDocket.trackingLog) {
+                await TrackingLog.findByIdAndUpdate(existingDocket.trackingLog, trackingLogData, { new: true, runValidators: true, session });
+            } else {
+                const newLog = await TrackingLog.create([trackingLogData], { session });
+                existingDocket.trackingLog = newLog[0]._id;
+                 // existingDocket will be saved later or as part of docketData update
+            }
+        }
+        
+        // 6. Update Docket (if docketData provided)
+        if (docketData && Object.keys(docketData).length > 0) {
+            // Ensure trackingLog _id from previous step is included if docketData doesn't explicitly set it
+            const docketUpdatePayload = { ...docketData };
+            if (existingDocket.trackingLog && !docketData.trackingLog && (trackingLogData && Object.keys(trackingLogData).length > 0) ) {
+                 docketUpdatePayload.trackingLog = existingDocket.trackingLog;
+            }
+            if (userId) docketUpdatePayload.updatedBy = userId; // Optional: track updater
+            if (docketData.date) docketUpdatePayload.date = new Date(docketData.date);
+
+            await Docket.findByIdAndUpdate(docketId, docketUpdatePayload, { new: true, runValidators: true, session });
+        } else if (existingDocket.isModified('trackingLog')) { // Save docket if only trackingLog was added
+            await existingDocket.save({session});
+        }
+
+
+        await session.commitTransaction();
+
+        const updatedPopulatedDocket = await populateDocketDetails(Docket.findById(docketId)).lean();
+         if (!updatedPopulatedDocket) {
+             throw new ApiError(500, "Docket updated but failed to retrieve for response.");
+        }
+
+        return res.status(200).json(
+            new ApiResponse(200, updatedPopulatedDocket, "Docket entry updated successfully.")
+        );
+
+    } catch (error) {
+        if (session.inTransaction()) {
+            await session.abortTransaction();
+        }
+        console.error("Error during updateFullDocketEntry:", error);
+        if (error instanceof ApiError) throw error;
+        throw new ApiError(500, error.message || "Failed to update docket entry. Transaction rolled back.");
+    } finally {
+        session.endSession();
+    }
+});
+
+// --- DELETE Docket Entry ---
+const deleteDocketEntry = asyncHandler(async (req, res) => {
+    const { docketId } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(docketId)) {
+        throw new ApiError(400, "Invalid Docket ID format.");
+    }
+
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+        const docketToDelete = await Docket.findById(docketId).session(session);
+        if (!docketToDelete) {
+            throw new ApiError(404, "Docket not found for deletion.");
+        }
+
+        // 1. Delete associated Gst (via PaymentDetail)
+        if (docketToDelete.paymentDetails) {
+            const paymentDetail = await PaymentDetail.findById(docketToDelete.paymentDetails).session(session);
+            if (paymentDetail && paymentDetail.gst) {
+                await Gst.findByIdAndDelete(paymentDetail.gst, { session });
+            }
+            // 2. Delete associated PaymentDetail
+            await PaymentDetail.findByIdAndDelete(docketToDelete.paymentDetails, { session });
+        }
+
+        // 3. Delete associated TrackingLog
+        if (docketToDelete.trackingLog) {
+            await TrackingLog.findByIdAndDelete(docketToDelete.trackingLog, { session });
+        }
+
+        // 4. Delete the Docket itself
+        await Docket.findByIdAndDelete(docketId, { session });
+
+        await session.commitTransaction();
+
+        return res.status(200).json(
+            new ApiResponse(200, { docketId }, "Docket entry and associated details deleted successfully.")
+        );
+
+    } catch (error) {
+        if (session.inTransaction()) {
+            await session.abortTransaction();
+        }
+        console.error("Error during deleteDocketEntry:", error);
+        if (error instanceof ApiError) throw error;
+        throw new ApiError(500, error.message || "Failed to delete docket entry. Transaction rolled back.");
+    } finally {
+        session.endSession();
+    }
+});
+
+
+export {
+    createFullDocketEntry,
+    getAllDockets,
+    getDocketByDocketNumber,
+    updateFullDocketEntry,
+    deleteDocketEntry
+};
