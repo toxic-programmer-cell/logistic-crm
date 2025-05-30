@@ -25,6 +25,7 @@ const populateDocketDetails = (query) => {
         .populate('createdBy', '-password -refreshToken');
 };
 
+// email, vender, client phone number
 
 // --- CREATE Full Docket Entry ---
 const createFullDocketEntry = asyncHandler(async (req, res) => {
@@ -56,12 +57,12 @@ const createFullDocketEntry = asyncHandler(async (req, res) => {
     }
     // ReciverClient Data Validation (if provided)
     if (reciverClientData && Object.keys(reciverClientData).length > 0) {
-        if (!reciverClientData.fullName || !reciverClientData.phoneNumber || !reciverClientData.address || !reciverClientData.gstNumber) {
+        if (!reciverClientData.fullName || !reciverClientData.email || !reciverClientData.phoneNumber || !reciverClientData.address || !reciverClientData.gstNumber || !reciverClientData.conssignee) {
             throw new ApiError(400, "Full name, phone number, address, and GST number are required for Receiver Client if provided.");
         }
     }
     // Client Data Validation
-    if (!clientData || !clientData.fullName || !clientData.phoneNumber || !clientData.address || !clientData.gstNumber) {
+    if (!clientData || !clientData.fullName || !clientData.email || !clientData.phoneNumber || !clientData.address || !clientData.gstNumber || !clientData.consignor) {
         throw new ApiError(400, "Full name, phone number, address, and GST number are required for Client.");
     }
     // PaymentDetail Data Validation
@@ -183,22 +184,65 @@ const getAllDockets = asyncHandler(async (req, res) => {
 });
 
 // --- READ Single Docket by Docket Number ---
-const getDocketByDocketNumber = asyncHandler(async (req, res) => {
-    const { docketNumber } = req.params;
-    if (!docketNumber || typeof docketNumber !== 'string' || docketNumber.trim() === "") {
-        throw new ApiError(400, "Docket number is required and must be a valid string.");
+const getSingleDocket = asyncHandler(async (req, res) => {
+    // console.log("docketrunning");
+    
+    // Take [docketNumber || email || phoneNumber || vender] as identifier
+    const { identifier } = req.params;
+
+    if (!identifier || typeof identifier !== 'string' || identifier.trim() === ''){
+        throw new ApiError(400, "Docket identifier is required and must be a non-empty string.");
     }
 
-    const docket = await populateDocketDetails(Docket.findOne({ docketNumber: docketNumber.trim() })).lean();
+    const searchTerm = identifier.trim();
+    const orCondition = [];
 
+    // Condition 1: Match by docketNumber
+    orCondition.push({ docketNumber: searchTerm });
+
+    // Condition 2: Match by client email
+    const clientByEmail = await Client.find({ email: searchTerm }).select('_id').lean();
+    if (clientByEmail.length > 0) {
+        orCondition.push({ clientDetails: { $in: clientByEmail.map(c => c._id)} });
+    }
+
+    // Condition 3: Match by client phoneNumber
+    const numericSearchTerm = Number(searchTerm);
+    if (!isNaN(numericSearchTerm)) {
+        const clientsByPhone = await Client.find({ phoneNumber: numericSearchTerm }).select('_id').lean();
+        if (clientsByPhone.length > 0) {
+            orCondition.push({ clientDetails: { $in: clientsByPhone.map(c => c._id) } });
+        }
+    }
+
+    // Condition 4: Match by vendor
+    const paymentDetailsByVendor = await PaymentDetail.find({ vendor: searchTerm }).select('_id').lean();
+    if (paymentDetailsByVendor.length > 0) {
+        orCondition.push({ paymentDetails: { $in: paymentDetailsByVendor.map(pd => pd._id) } });
+    }
+
+    let query = {};
+    if (orCondition.length > 0) {
+        query = { $or: orCondition }
+    } else {
+        throw new ApiError(404, `No dockets found matching identifier "${searchTerm}".`)
+    }
+
+    const docket = await populateDocketDetails(Docket.findOne(query)).lean();
 
     if (!docket) {
-        throw new ApiError(404, `Docket with number '${docketNumber}' not found.`);
+        throw new ApiError(404, `Docket not found for identifier '${searchTerm}'.`)
     }
 
-    return res.status(200).json(
-        new ApiResponse(200, docket, "Docket retrieved successfully.")
-    );
+    return res
+    .status(200)
+    .json(
+        new ApiResponse(
+            200,
+            docket,
+            "Docket retrieved successfully."
+        )
+    )
 });
 
 // --- UPDATE Full Docket Entry ---
@@ -383,7 +427,7 @@ const deleteDocketEntry = asyncHandler(async (req, res) => {
 export {
     createFullDocketEntry,
     getAllDockets,
-    getDocketByDocketNumber,
+    getSingleDocket,
     updateFullDocketEntry,
     deleteDocketEntry
 };

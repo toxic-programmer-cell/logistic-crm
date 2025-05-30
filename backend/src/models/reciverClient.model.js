@@ -16,9 +16,15 @@ const reciverClientSchema = new Schema({
         type: Number,
         required: true
     },
-    address: {
+    conssignee: {
         type: String,
         required: true
+    },
+    email: {
+        type: String,
+        required: true,
+        lowercase: true,
+        unique: true
     },
     gstNumber: {
         type: String,

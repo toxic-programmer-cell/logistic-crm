@@ -4,6 +4,7 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { User } from "../models/users.model.js";
 import jwt from "jsonwebtoken";
 
+// update , delete
 
 // GENERATING ACCESS AND REFRESH TOKENS
 const generateAccessAndRefreshToken = async (userId) => {

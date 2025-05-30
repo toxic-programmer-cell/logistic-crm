@@ -8,7 +8,19 @@ const clientSchema = new Schema({
     },
     phoneNumber: {
         type: Number,
+        required: true,
+        index: true
+    },
+    consignor: {
+        type: String,
         required: true
+    },
+    email: {
+        type: String,
+        required: true,
+        lowercase: true,
+        unique: true,
+        index: true
     },
     address: {
         type: String,
