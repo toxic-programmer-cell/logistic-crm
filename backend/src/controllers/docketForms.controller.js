@@ -25,7 +25,6 @@ const populateDocketDetails = (query) => {
         .populate('createdBy', '-password -refreshToken');
 };
 
-// email, vender, client phone number
 
 // --- CREATE Full Docket Entry ---
 const createFullDocketEntry = asyncHandler(async (req, res) => {
@@ -183,7 +182,7 @@ const getAllDockets = asyncHandler(async (req, res) => {
     );
 });
 
-// --- READ Single Docket by Docket Number ---
+// --- READ Single Docket by Docket Number, email, vender, client phone number---
 const getSingleDocket = asyncHandler(async (req, res) => {
     // console.log("docketrunning");
     
