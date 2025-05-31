@@ -2,6 +2,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { User } from "../models/users.model.js";
+import mongoose  from "mongoose";
 import jwt from "jsonwebtoken";
 
 // update , delete
@@ -217,12 +218,126 @@ const refreshAccessToken = asyncHandler( async (req, res) => {
 })
 
 const updateUserProfile = asyncHandler( async (req, res) => {
+    /**
+     * 1. Admin role check
+     * 2. Get user ID from request params
+     * 3. Get updated user data from request body
+     * 4. Prevent password update through this endpoint
+     * 5. Validate updated data
+     * 6. Check username and email uniqueness
+     * 7. Update user profile in the database
+     * 8. Return updated user profile
+     */
+    // Admin role check
+    if (req.user.role !== 'ADMIN') {
+        throw new ApiError(403, 'Only admin can update user profiles');
+    }
+
+    // Get user ID from request params
+    const { userId } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+        throw new ApiError(400, 'Invalid user ID');
+    }
+
+    // Get updated user data from request body
+    const { fullName, username, phoneNumber, email, role } = req.body;
     
+    if (req.body.password) {
+        throw new ApiError(400, 'Password update is not allowed through this endpoint');
+    }
+
+    // Construct the update object
+    const updateFields = {};
+
+    // fullName validation
+    if (fullName !== undefined) {
+        if (typeof fullName !== 'string' || fullName.trim() !== "") {
+            throw new ApiError(400, 'Full name is required and must be a string');
+        }
+        updateFields.fullName = fullName.trim();
+    }
+
+    // username validation
+    if (username !== undefined) {
+        if (typeof username !== 'string' || username.trim() === "") {
+            throw new ApiError(400, 'Username is required and must be a string');
+        }
+        updateFields.username = username.trim().toLowerCase();
+    }
+
+    // phoneNumber validation
+    if (phoneNumber !== undefined) {
+        if (typeof phoneNumber !== 'string' || phoneNumber.trim() === "") {
+            throw new ApiError(400, 'Phone number required')
+        }
+        updateFields.phoneNumber = phoneNumber.trim();
+    }
+
+    // email validation
+    if (email !== undefined) {
+        if (typeof email !== 'string' || email.trim() === "") {
+            throw new ApiError(400, "Email is required")
+        }
+        if (!/\S+@\S+\.\S+/.test(email.trim())) {
+            throw new ApiError(400, "Invalid email format");
+        }
+        updateFields.email = email.trim().toLowerCase();
+    }
+
+    // role validation
+    if (role !== undefined) {
+        const roleValue = String(role).toUpperCase();
+        if (!['ADMIN', 'USER'].includes(roleValue)) {
+            throw new ApiError(400, "Invalid role specified. Allowed roles are 'ADMIN' or 'USER'.");
+        }
+        updateFields.role = roleValue;
+    }
+
+    if (Object.keys(updateFields).length === 0) {
+        throw new ApiError(400, "No valid fields provided for update. Allowed fields: fullName, username, phoneNumber, email, role.");
+    }
+
+    // 7. Check for conflicts if username or email are being updated
+    const conflictChecks = [];
+    if (updateFields.username) conflictChecks.push({ username: updateFields.username, _id: { $ne: userId } });
+    if (updateFields.email) conflictChecks.push({ email: updateFields.email, _id: { $ne: userId } });
+
+    if (conflictChecks.length > 0) {
+        const existingUserWithConflict = await User.findOne({ $or: conflictChecks });
+        if (existingUserWithConflict) {
+            throw new ApiError(409, `Update failed: ${updateFields.username && existingUserWithConflict.username === updateFields.username ? `Username '${updateFields.username}'` : `Email '${updateFields.email}'`} is already taken.`);
+        }
+    }
+
+    // Update user profile in the database
+    const updateUser = await User.findByIdAndUpdate(
+        userId,
+        { $set: updateFields },
+        {
+             new: true,
+            runValidators: true
+        }
+    ).select("-password -refreshToken")
+
+    if (!updateUser) {
+        throw new ApiError(404, "User update failed: User not found");
+    }
+
+    return res
+    .status(200)
+    .json(
+        new ApiResponse(
+            200,
+            updateUser,
+            "User profile updated successfully"
+        )
+    )
 })
 
 export {
     registerUser,
     loginUser,
     logoutUser,
-    refreshAccessToken
+    refreshAccessToken,
+    updateUserProfile
 }
