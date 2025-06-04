@@ -334,10 +334,40 @@ const updateUserProfile = asyncHandler( async (req, res) => {
     )
 })
 
+const deleteuser = asyncHandler( async (req, res) => {
+    if (req.user.role !== 'ADMIN') {
+        throw new ApiError(403, 'Only admin can delete users');
+    }
+
+    const { userId  } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+        throw new ApiError(400, 'Invalid user ID');
+    }
+
+    if (req.user._id.toString() === userId) {
+        throw new ApiError(400, 'You cannot delete your own account');
+    }
+
+    const deletedUser = await User.findByIdAndDelete(userId);
+
+    if (!deletedUser) {
+        throw new ApiError(404, 'User not found or already deleted');
+    }
+
+    return res
+    .status(200)
+    .json(new ApiResponse(
+        200,
+        {userId: deletedUser._id},
+        "User deleted successfully"
+    ))
+})
+
 export {
     registerUser,
     loginUser,
     logoutUser,
     refreshAccessToken,
-    updateUserProfile
+    updateUserProfile,
+    deleteuser
 }
