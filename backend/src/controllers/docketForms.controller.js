@@ -25,7 +25,6 @@ const populateDocketDetails = (query) => {
         .populate('createdBy', '-password -refreshToken');
 };
 
-
 // --- CREATE Full Docket Entry ---
 const createFullDocketEntry = asyncHandler(async (req, res) => {
     const {
