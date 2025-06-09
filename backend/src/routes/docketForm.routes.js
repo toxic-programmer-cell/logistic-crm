@@ -7,15 +7,14 @@ const router = Router();
 router.use(verifyJWT); // Apply JWT verification middleware to all routes in this router
 
 router.route("/")
-.post(createFullDocketEntry)
-.get(getAllDockets);
+.post(createFullDocketEntry)  //Create Docket
+.get(getAllDockets);  //Get all Dockets
 
 router.route("/lookup/:identifier")
-.get(getSingleDocket);
+.get(getSingleDocket);  // Get a single Docket by identifier
 
 router.route("/:docketId")
-.patch(updateFullDocketEntry)
-
-.delete(deleteDocketEntry);
+.patch(updateFullDocketEntry)  // Update a Docket by ID
+.delete(deleteDocketEntry);  // Delete a Docket by ID
 
 export default router;

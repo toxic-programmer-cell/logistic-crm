@@ -39,6 +39,7 @@ const generateAccessAndRefreshToken = async (userId) => {
 const registerUser = asyncHandler( async (req, res) => {
     const { fullName, username, phoneNumber, email, password, role } = req.body
 
+    // ADMIN ROLE CHECK
     if (req.user.role !== 'ADMIN') {
         throw new ApiError(403, 'Only admin can register new users');
     }
@@ -47,7 +48,7 @@ const registerUser = asyncHandler( async (req, res) => {
     if ([fullName, username, phoneNumber, email, password].some((field) => field?.trim() === "")) {
         throw new ApiError(400, 'All fields are required');
     }
-
+    //role validation
     if (role && !['ADMIN', 'USER'].includes(role.toUpperCase())) {
         throw new ApiError(400, "Invalid role specified. Allowed roles are 'ADMIN' or 'USER'.");
     }
