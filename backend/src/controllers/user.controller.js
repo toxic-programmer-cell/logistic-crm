@@ -251,7 +251,7 @@ const updateUserProfile = asyncHandler( async (req, res) => {
 
     // fullName validation
     if (fullName !== undefined) {
-        if (typeof fullName !== 'string' || fullName.trim() !== "") {
+        if (typeof fullName !== 'string' || fullName.trim() === "") {
             throw new ApiError(400, 'Full name is required and must be a string');
         }
         updateFields.fullName = fullName.trim();
@@ -336,7 +336,7 @@ const updateUserProfile = asyncHandler( async (req, res) => {
 
 const deleteuser = asyncHandler( async (req, res) => {
     if (req.user.role !== 'ADMIN') {
-        throw new ApiError(403, 'Only admin can delete users');
+        throw new ApiError(403, 'EXCEPTION: --Only admin can delete users--');
     }
 
     const { userId  } = req.params;
@@ -345,7 +345,7 @@ const deleteuser = asyncHandler( async (req, res) => {
     }
 
     if (req.user._id.toString() === userId) {
-        throw new ApiError(400, 'You cannot delete your own account');
+        throw new ApiError(400, 'EXCEPTION: You cannot delete your own account');
     }
 
     const deletedUser = await User.findByIdAndDelete(userId);

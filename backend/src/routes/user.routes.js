@@ -7,8 +7,8 @@ const router = Router();
 router.route("/register").post(verifyJWT, registerUser);
 router.route("/login").post(loginUser);
 router.route("/logout").get(verifyJWT, logoutUser);
-router.route("/update-user-profile").put(verifyJWT, updateUserProfile);
-router.route("/delete-user").delete(verifyJWT, deleteuser);
+router.route("/update-user-profile/:userId").put(verifyJWT, updateUserProfile);
+router.route("/delete-user/:userId").delete(verifyJWT, deleteuser);
 router.route("/refresh-token").post(refreshAccessToken);
 
 export default router;
