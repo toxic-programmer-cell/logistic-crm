@@ -12,14 +12,16 @@ export default function Home() {
         <div className="flex">
           <Sidebar isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode} />
           <main className="flex-1 min-h-screen bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white">
+            {/* <nav className='p-5 bg-white'></nav> */}
             <Routes>
               <Route path="/" element={<Dashboard />} />
               {/* Add more routes below as needed */}
-              <Route path="/revenue" element={<div className="p-6">Revenue Page</div>} />
-              <Route path="/notifications" element={<div className="p-6">Notifications</div>} />
-              <Route path="/analytics" element={<div className="p-6">Analytics</div>} />
-              <Route path="/likes" element={<div className="p-6">Likes</div>} />
-              <Route path="/wallets" element={<div className="p-6">Wallets</div>} />
+              <Route path="/operation" element={<div className="p-6">operation</div>} />
+              <Route path="/settings" element={<div className="p-6">settings</div>} />
+              <Route path="/accounts" element={<div className="p-6">accounts</div>} />
+              <Route path="/user" element={<div className="p-6">user</div>} />
+              <Route path="/reports" element={<div className="p-6">reports</div>} />
+              <Route path="/dashboard/overview" element={<div className="p-6">Overview</div>} />
             </Routes>
           </main>
         </div>

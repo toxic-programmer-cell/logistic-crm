@@ -15,18 +15,18 @@ import {
 import { Link } from 'react-router-dom';
 
 const navLinks = [
-  { icon: <HomeIcon size={20} />, label: 'Dashboard', path: '/',
+  { icon: <HomeIcon size={20} />, label: 'Master', path: '/',
     subLinks: [
       { label: 'Overview', path: '/dashboard/overview' },
       { label: 'User Management', path: '/dashboard/users' },
       { label: 'System Health', path: '/dashboard/health' },
     ],
   },
-  { icon: <BarChartIcon size={20} />, label: 'Revenue', path: '/revenue' },
-  { icon: <BellIcon size={20} />, label: 'Notifications', path: '/notifications' },
-  { icon: <PieChartIcon size={20} />, label: 'Analytics', path: '/analytics' },
-  { icon: <HeartIcon size={20} />, label: 'Likes', path: '/likes' },
-  { icon: <WalletIcon size={20} />, label: 'Wallets', path: '/wallets' },
+  { icon: <BarChartIcon size={20} />, label: 'Operation', path: '/operation' },
+  { icon: <BellIcon size={20} />, label: 'Settings', path: '/settings' },
+  { icon: <PieChartIcon size={20} />, label: 'Accounts', path: '/accounts' },
+  { icon: <HeartIcon size={20} />, label: 'User', path: '/user' },
+  { icon: <WalletIcon size={20} />, label: 'Reports', path: '/reports' },
 ];
 
 export default function Sidebar({ isDarkMode, setIsDarkMode }) {
@@ -42,8 +42,8 @@ export default function Sidebar({ isDarkMode, setIsDarkMode }) {
       <div className="flex items-center justify-between p-4">
         {!isCollapsed && (
           <div>
-            <h1 className="text-xl font-bold text-gray-800 dark:text-white">Codinglab</h1>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Web Developer</p>
+            <h1 className="text-xl font-bold text-gray-800 dark:text-white">GlobalIndiaExpress</h1>
+            <p className="text-sm text-gray-500 dark:text-gray-400">International Courier</p>
           </div>
         )}
         <button
