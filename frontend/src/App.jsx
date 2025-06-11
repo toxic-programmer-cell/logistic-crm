@@ -22,7 +22,6 @@ function AppRoutes() {
 function App() {
 
   return (
-    <div className="app-container"> {/* Added a test class */}
       <AuthProvider>
         <ThemeProvider>
           <Router>
@@ -30,8 +29,6 @@ function App() {
           </Router>
         </ThemeProvider>
       </AuthProvider>
-    </div>
-
   )
 }
 
