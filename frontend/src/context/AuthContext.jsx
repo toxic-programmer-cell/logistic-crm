@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState } from 'react';
+import axios from 'axios';
 
 const AuthContext = createContext(null);
 
@@ -15,7 +16,7 @@ export const AuthProvider = ({ children }) => {
   const logout = async () => {
     try {
       // Optional: Call API to invalidate session on backend
-      await fetch('/api/v1/users/logout', { method: 'GET' });
+      await axios.get('/api/v1/users/logout')
     } catch (error) {
       console.error("Logout API call failed:", error);
     }

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 
 export default function Login() {
@@ -22,47 +23,29 @@ export default function Login() {
     }
 
     try {
-      // Adjust the API endpoint if your backend is hosted elsewhere or has a different prefix
-      const response = await fetch('/api/v1/users/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      });
+      // Api call to login the user
+      const response = await axios.post('/api/v1/users/login', {email, password});
 
-    //   const data = await response.json();
-    const responseText = await response.text();
-    console.log('Login Response Status:', response.status);
-    // console.log('Login Response Text:', responseText);
+      console.log('Login Response Status:', response.status);
 
-
-      if (!response.ok) {
-        // throw new Error(data.message || `HTTP error! status: ${response.status}`);
-        let errorMessage = `HTTP error! status: ${response.status}`;
-        try {
-          const errorData = JSON.parse(responseText);
-          errorMessage = errorData.message || errorMessage;
-        } catch (parseError) {
-          // If parsing fails, responseText was not JSON. Keep the generic HTTP error.
-          console.error("Failed to parse error response:", parseError);
-        }
-        throw new Error(errorMessage);
-      }
-      const data = JSON.parse(responseText);
+      const data = response.data;
 
       if (data && data.success && data.data.accessToken) {
         localStorage.setItem('accessToken', data.data.accessToken);
-        // If user data is also needed globally, you might store data.data.user as well
-        // localStorage.setItem('user', JSON.stringify(data.data.user));
         login();
-        navigate('/'); // Navigate to dashboard or home page
+        navigate('/');
       } else {
         setError(data.message || 'Login failed. Please check your credentials.');
       }
     } catch (err) {
       console.error("Login error:", err);
-      setError(err.message || 'An error occurred during login. Please try again.');
+      if (err.response && err.response.data && err.response.data.message) {
+        setError(err.response.data.message);
+      } else if (err.message) {
+        setError(err.message);
+      } else {
+        setError('An error occurred during login. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
