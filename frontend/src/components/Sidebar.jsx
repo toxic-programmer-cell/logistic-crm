@@ -13,6 +13,7 @@ import {
   SearchIcon,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 const navLinks = [
   { icon: <HomeIcon size={20} />, label: 'Master', path: '/',
@@ -32,6 +33,7 @@ const navLinks = [
 export default function Sidebar({ isDarkMode, setIsDarkMode }) {
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [hoveredItemIndex, setHoveredItemIndex] = useState(null);
+  const { logout } = useAuth();
 
   return (
     <nav
@@ -131,7 +133,7 @@ export default function Sidebar({ isDarkMode, setIsDarkMode }) {
                   {/* Pop-out sub-links for COLLAPSED sidebar */}
                   {isCollapsed && (
                     <div
-                      className="absolute left-[60%] ml-2 top-0 w-max bg-white dark:bg-gray-800 shadow-lg p-2 z-50 border border-gray-200 dark:border-gray-700"
+                      className="absolute left-[85%] ml-2 top-0 w-max bg-white rounded-md dark:bg-gray-800 shadow-lg p-2 z-50 border border-gray-200 dark:border-gray-700"
                       onMouseEnter={() => { if (link.subLinks) setHoveredItemIndex(idx); }} // Keep open when mouse enters pop-out
                       onMouseLeave={() => { if (link.subLinks) setHoveredItemIndex(null); }} // Close when mouse leaves pop-out
                     >
@@ -157,7 +159,9 @@ export default function Sidebar({ isDarkMode, setIsDarkMode }) {
       </div>
 
       <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-        <button className="flex items-center w-full p-2 rounded-lg hover:bg-red-100 dark:hover:bg-red-800 text-red-600 dark:text-red-400">
+        <button
+          onClick={logout}
+          className="flex items-center w-full p-2 rounded-lg hover:bg-red-100 dark:hover:bg-red-800 text-red-600 dark:text-red-400">
           <LogOutIcon size={20} />
           {!isCollapsed && <span className="ml-3">Logout</span>}
         </button>
