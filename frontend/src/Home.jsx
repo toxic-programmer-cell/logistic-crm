@@ -1,15 +1,13 @@
-import { useState } from 'react';
+
 import { Routes, Route } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
 import Dashboard from './pages/Dashbord';
 
 export default function Home() {
-  const [isDarkMode, setIsDarkMode] = useState(false);
 
   return (
-    <div className={`${isDarkMode ? 'dark' : ''}`}>
       <div className="flex">
-        <Sidebar isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode} />
+        <Sidebar />
         <main className="flex-1 min-h-screen bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white">
           <Routes>
             <Route path="/" element={<Dashboard />} />
@@ -23,7 +21,6 @@ export default function Home() {
           </Routes>
         </main>
       </div>
-    </div>
   );
 }
 

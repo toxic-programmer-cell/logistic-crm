@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 
 const navLinks = [
   { icon: <HomeIcon size={20} />, label: 'Master', path: '/',
@@ -30,10 +31,11 @@ const navLinks = [
   { icon: <WalletIcon size={20} />, label: 'Reports', path: '/reports' },
 ];
 
-export default function Sidebar({ isDarkMode, setIsDarkMode }) {
+export default function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [hoveredItemIndex, setHoveredItemIndex] = useState(null);
   const { logout } = useAuth();
+  const { isDarkMode, toggleTheme } = useTheme();
 
   return (
     <nav
@@ -158,6 +160,7 @@ export default function Sidebar({ isDarkMode, setIsDarkMode }) {
         </ul>
       </div>
 
+      {/* Logout button */}
       <div className="p-4 border-t border-gray-200 dark:border-gray-700">
         <button
           onClick={logout}
@@ -168,10 +171,10 @@ export default function Sidebar({ isDarkMode, setIsDarkMode }) {
 
         <div className="flex items-center mt-4 justify-between">
           {!isCollapsed && (
-            <span className="text-sm text-gray-700 dark:text-gray-300">Dark mode</span>
+            <span className="text-sm text-gray-700 dark:text-gray-300">{isDarkMode ? 'Dark Mode' : 'Light Mode'}</span>
           )}
           <button
-            onClick={() => setIsDarkMode(!isDarkMode)}
+            onClick={toggleTheme}
             className="ml-auto flex items-center justify-center w-8 h-8 rounded-full bg-gray-200 dark:bg-gray-700"
           >
             {isDarkMode ? <SunIcon size={16} /> : <MoonIcon size={16} />}
