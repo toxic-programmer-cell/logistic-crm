@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import axios from 'axios';
 import ClientDetailsForm from '../components/docketForms/ClientDetailsForm';
 import ReceiverClientDetailsForm from '../components/docketForms/ReceiverClientDetailsForm';
 import DocketDetailsForm from '../components/docketForms/DocketDetailsForm';
@@ -122,25 +123,20 @@ const CreateDocketPages = () => {
     }
 
     try {
-        const response = await fetch('/api/dockets/create-full', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          // 'Authorization': `Bearer YOUR_AUTH_TOKEN`, 
-        },
-        body: JSON.stringify(payload),
-      });
+        const response = await axios.post('/api/v1/dockets/', payload, {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('token')}`
+          }
+        })
 
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.message || `HTTP error! status: ${response.status}`);
-      }
+      // const result = response.data;
 
       setMessage({ text: 'Docket entry created successfully!', type: 'success' });
     } catch (error) {
         console.error("Error creating docket entry:", error);
-        setMessage({ text: error.message || 'Failed to create docket entry.', type: 'error' });
+        const errorMessage = error.response?.data?.message || error.message || 'Failed to create docket entry.';
+        setMessage({ text: errorMessage, type: 'error' });
     } finally {
       setLoading(false);
     }
@@ -186,8 +182,7 @@ const CreateDocketPages = () => {
         <TrackingLogForm formData={formData.trackingLogData} handleChange={handleNestedChange} renderInput={renderInput} />
 
         <div className="pt-5">
-          <button type="submit" disabled={loading} className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:bg-indigo-500 dark:hover:bg-indigo-600 disabled:opacity-50"
-          >
+          <button type="submit" disabled={loading} className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:bg-indigo-500 dark:hover:bg-indigo-600 disabled:opacity-50">
             {loading ? 'Submitting...' : 'Create Docket Entry'}
           </button>
         </div>
