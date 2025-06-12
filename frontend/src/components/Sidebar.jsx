@@ -19,7 +19,7 @@ import { useTheme } from '../context/ThemeContext';
 const navLinks = [
   { icon: <HomeIcon size={20} />, label: 'Master', path: '/',
     subLinks: [
-      { label: 'Overview', path: '/dashboard/overview' },
+      { label: 'Docket', path: '/dashboard/docket' },
       { label: 'User Management', path: '/dashboard/users' },
       { label: 'System Health', path: '/dashboard/health' },
     ],

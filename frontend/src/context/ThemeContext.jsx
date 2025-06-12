@@ -18,23 +18,23 @@ export const ThemeProvider = ({ children }) => {
   });
 
   useEffect(() => {
-    console.log('[ThemeContext] useEffect triggered. isDarkMode:', isDarkMode );
+    // console.log('[ThemeContext] useEffect triggered. isDarkMode:', isDarkMode );
     localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
     if (isDarkMode) {
       document.documentElement.classList.add('dark');
-      console.log('[ThemeContext] Added "dark" class to <html>');
+      // console.log('[ThemeContext] Added "dark" class to <html>');
     } else {
       document.documentElement.classList.remove('dark');
-      console.log('[ThemeContext] Removed "dark" class from <html>');
+      // console.log('[ThemeContext] Removed "dark" class from <html>');
     }
   }, [isDarkMode]);
 
 //   const toggleTheme = () => setIsDarkMode(prevMode => !prevMode);
     const toggleTheme = () => {
-        console.log('[ThemeContext] toggleTheme called.');
+        // console.log('[ThemeContext] toggleTheme called.');
         setIsDarkMode(prevMode => {
         const newMode = !prevMode;
-        console.log('[ThemeContext] Previous mode:', prevMode, 'New mode:', newMode);
+        // console.log('[ThemeContext] Previous mode:', prevMode, 'New mode:', newMode);
         return newMode;
         });
     };
