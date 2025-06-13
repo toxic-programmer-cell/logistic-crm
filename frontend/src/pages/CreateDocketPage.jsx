@@ -7,6 +7,7 @@ import PaymentDetailsForm from '../components/docketForms/PaymentDetailsForm';
 import GstDetailsForm from '../components/docketForms/GstDetailsForm';
 import BranchDetailsForm from '../components/docketForms/BranchDetailsForm';
 import TrackingLogForm from '../components/docketForms/TrackingLogForm';
+import { toast } from 'react-toastify';
 
 const CreateDocketPages = () => {
     const [formData, setFormData] = useState({
@@ -69,7 +70,6 @@ const CreateDocketPages = () => {
   });
 
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState({ text: '', type: '' });
 
   const handleNestedChange = (section, e) => {
     const { name, value, type } = e.target;
@@ -85,12 +85,11 @@ const CreateDocketPages = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setMessage({ text: '', type: '' });
 
     const token = localStorage.getItem('accessToken');
     // console.log('Token being sent:', token);
     if (!token) {
-      setMessage({ text: 'Authentication error: No token found. Please log in again.', type: 'error' });
+      toast.error({ 'Authentication error: No token found. Please log in again.', type: 'error' });
       setLoading(false);
       return;
     }
@@ -135,11 +134,11 @@ const CreateDocketPages = () => {
 
       // const result = response.data;
 
-      setMessage({ text: 'Docket entry created successfully!', type: 'success' });
+      toast.success({ text: 'Docket entry created successfully!', type: 'success' });
     } catch (error) {
         console.error("Error creating docket entry:", error);
         const errorMessage = error.response?.data?.message || error.message || 'Failed to create docket entry.';
-        setMessage({ text: errorMessage, type: 'error' });
+        toast.error({ errorMessage, type: 'error' });
     } finally {
       setLoading(false);
     }
@@ -169,11 +168,6 @@ const CreateDocketPages = () => {
     <div className="container mx-auto p-4 bg-white dark:bg-gray-800 min-h-screen">
       <h1 className="text-2xl font-bold mb-6 text-gray-800 dark:text-gray-100">Create New Docket Entry</h1>
 
-      {message.text && (
-        <div className={`p-4 mb-6 text-sm rounded-lg ${message.type === 'success' ? 'bg-green-100 text-green-700 dark:bg-green-800 dark:text-green-200' : 'bg-red-100 text-red-700 dark:bg-red-800 dark:text-red-200'}`} role="alert">
-          {message.text}
-        </div>
-      )}
 
       <form onSubmit={handleSubmit} className="space-y-8">
         <ClientDetailsForm formData={formData.clientData} handleChange={handleNestedChange} renderInput={renderInput} />
