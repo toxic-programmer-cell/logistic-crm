@@ -89,7 +89,7 @@ const CreateDocketPages = () => {
     const token = localStorage.getItem('accessToken');
     // console.log('Token being sent:', token);
     if (!token) {
-      toast.error({ 'Authentication error: No token found. Please log in again.', type: 'error' });
+      toast.error( 'Authentication error: No token found. Please log in again.');
       setLoading(false);
       return;
     }
@@ -134,11 +134,11 @@ const CreateDocketPages = () => {
 
       // const result = response.data;
 
-      toast.success({ text: 'Docket entry created successfully!', type: 'success' });
+      toast.success( 'Docket entry created successfully!' );
     } catch (error) {
         console.error("Error creating docket entry:", error);
         const errorMessage = error.response?.data?.message || error.message || 'Failed to create docket entry.';
-        toast.error({ errorMessage, type: 'error' });
+        toast.error( errorMessage );
     } finally {
       setLoading(false);
     }
