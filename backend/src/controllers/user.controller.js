@@ -167,7 +167,7 @@ const logoutUser = asyncHandler( async (req, res) => {
 
 // REFRESH ACCESS TOKEN CONTROLLER
 const refreshAccessToken = asyncHandler( async (req, res) => {
-    const incomingRefreshToken = req.cookie?.refreshToken || req.body?.refreshToken;
+    const incomingRefreshToken = req.cookies?.refreshToken || req.body?.refreshToken;
     
     try {
         if (!incomingRefreshToken) {

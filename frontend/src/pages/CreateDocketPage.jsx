@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import axiosInstance from '../api/axiosInstance';
 import ClientDetailsForm from '../components/docketForms/ClientDetailsForm';
 import ReceiverClientDetailsForm from '../components/docketForms/ReceiverClientDetailsForm';
 import DocketDetailsForm from '../components/docketForms/DocketDetailsForm';
@@ -87,6 +87,14 @@ const CreateDocketPages = () => {
     setLoading(true);
     setMessage({ text: '', type: '' });
 
+    const token = localStorage.getItem('accessToken');
+    // console.log('Token being sent:', token);
+    if (!token) {
+      setMessage({ text: 'Authentication error: No token found. Please log in again.', type: 'error' });
+      setLoading(false);
+      return;
+    }
+
     const payload = {
       gstData: {
         sgst: parseFloat(formData.gstData.sgst) || 0,
@@ -123,12 +131,7 @@ const CreateDocketPages = () => {
     }
 
     try {
-        const response = await axios.post('/api/v1/dockets/', payload, {
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        })
+        const response = await axiosInstance.post('/dockets/', payload)
 
       // const result = response.data;
 
