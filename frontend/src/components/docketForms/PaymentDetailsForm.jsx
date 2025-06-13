@@ -1,10 +1,10 @@
 import React from 'react';
 
-const PaymentDetailsForm = ({ formData, handleChange, renderInput }) => {
+const PaymentDetailsForm = ({ formData, handleChange, renderInput, children }) => {
   return (
     <fieldset className="p-4 border border-gray-300 dark:border-gray-700 rounded-md">
       <legend className="text-lg font-semibold px-2 text-gray-700 dark:text-gray-200">Payment Details</legend>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
         {renderInput('paymentDetailData', 'declaredValue', 'Declared Value', 'number', true)}
         {renderInput('paymentDetailData', 'vendor', 'Vendor', 'text', true)}
         {renderInput('paymentDetailData', 'vendorNumber', 'Vendor Number', 'text', true)}
@@ -19,6 +19,7 @@ const PaymentDetailsForm = ({ formData, handleChange, renderInput }) => {
         {renderInput('paymentDetailData', 'otherC', 'Other Charges', 'number', true)}
         {renderInput('paymentDetailData', 'total', 'Total Amount', 'number', true)}
       </div>
+      {children && <div className="mt-6">{children}</div>}
     </fieldset>
   );
 };

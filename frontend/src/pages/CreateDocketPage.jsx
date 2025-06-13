@@ -166,16 +166,24 @@ const CreateDocketPages = () => {
 
   return (
     <div className="container mx-auto p-4 bg-white dark:bg-gray-800 min-h-screen">
-      <h1 className="text-2xl font-bold mb-6 text-gray-800 dark:text-gray-100">Create New Docket Entry</h1>
+      <div className="flex items-start mb-6"> {/* Use items-start to align the tops */}
+        <h1 className="text-2xl w-auto font-bold text-gray-800 dark:text-gray-100 self-center mr-6">Create New Docket Entry</h1>
+        <div className="w-auto max-w-xs mr-6 flex-shrink-0"> {/* Controls width of BranchDetailsForm and prevents shrinking */}
+          <BranchDetailsForm formData={formData.branchData} handleChange={handleNestedChange} renderInput={renderInput} />
+        </div>
+      </div>
 
 
       <form onSubmit={handleSubmit} className="space-y-8">
-        <ClientDetailsForm formData={formData.clientData} handleChange={handleNestedChange} renderInput={renderInput} />
-        <ReceiverClientDetailsForm formData={formData.reciverClientData} handleChange={handleNestedChange} renderInput={renderInput} />
         <DocketDetailsForm formData={formData.docketData} handleChange={handleNestedChange} renderInput={renderInput} />
-        <PaymentDetailsForm formData={formData.paymentDetailData} handleChange={handleNestedChange} renderInput={renderInput} />
-        <GstDetailsForm formData={formData.gstData} handleChange={handleNestedChange} renderInput={renderInput} />
-        <BranchDetailsForm formData={formData.branchData} handleChange={handleNestedChange} renderInput={renderInput} />
+        <div className="flex flex-col md:flex-row md:space-x-8 space-y-8 md:space-y-0">
+          <div className="flex-1"><ClientDetailsForm formData={formData.clientData} handleChange={handleNestedChange} renderInput={renderInput} /></div>
+          <div className="flex-1"><ReceiverClientDetailsForm formData={formData.reciverClientData} handleChange={handleNestedChange} renderInput={renderInput} /></div>
+        </div>
+        <PaymentDetailsForm formData={formData.paymentDetailData} handleChange={handleNestedChange} renderInput={renderInput}>
+          <GstDetailsForm formData={formData.gstData} handleChange={handleNestedChange} renderInput={renderInput} />
+        </PaymentDetailsForm>
+        
         <TrackingLogForm formData={formData.trackingLogData} handleChange={handleNestedChange} renderInput={renderInput} />
 
         <div className="pt-5">
