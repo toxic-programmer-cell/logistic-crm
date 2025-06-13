@@ -4,13 +4,14 @@ import {
   BarChartIcon,
   BellIcon,
   PieChartIcon,
-  HeartIcon,
+  SettingsIcon,
   WalletIcon,
   LogOutIcon,
   MoonIcon,
   SunIcon,
   ChevronRightIcon,
   SearchIcon,
+  UserIcon,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -25,9 +26,13 @@ const navLinks = [
     ],
   },
   { icon: <BarChartIcon size={20} />, label: 'Operation', path: '/operation' },
-  { icon: <BellIcon size={20} />, label: 'Settings', path: '/settings' },
+  { icon: <SettingsIcon size={20} />, label: 'Settings', path: '/settings' },
   { icon: <PieChartIcon size={20} />, label: 'Accounts', path: '/accounts' },
-  { icon: <HeartIcon size={20} />, label: 'User', path: '/user' },
+  { icon: <UserIcon size={20} />, label: 'User', path: '/user',
+    subLinks: [
+      { label: 'Create User', path: '/user/create' },
+    ]
+  },
   { icon: <WalletIcon size={20} />, label: 'Reports', path: '/reports' },
 ];
 
@@ -93,20 +98,6 @@ export default function Sidebar() {
                 {link.icon}
                 {!isCollapsed && <span className="ml-3">{link.label}</span>}
               </Link>
-              {/* {!isCollapsed && link.subLinks && hoveredItemIndex === idx && (
-                <ul className="pl-8 pt-1 pb-1 space-y-1">
-                  {link.subLinks.map((subLink, subIdx) => (
-                    <li key={subIdx}>
-                      <Link
-                        to={subLink.path}
-                        className="flex items-center py-1 px-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 text-sm text-gray-600 dark:text-gray-400"
-                      >
-                        <span>{subLink.label}</span>
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              )} */}
 
               {/* Render sub-links based on hover and collapsed state */}
               {link.subLinks && hoveredItemIndex === idx && (
