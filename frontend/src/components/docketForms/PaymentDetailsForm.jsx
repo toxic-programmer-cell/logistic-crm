@@ -17,9 +17,11 @@ const PaymentDetailsForm = ({ formData, handleChange, renderInput, children }) =
         {renderInput('paymentDetailData', 'frieghtOn', 'Freight On (Backend: frieghtOn)', 'text', true)}
         {renderInput('paymentDetailData', 'clearence', 'Clearance Charges (Backend: clearence)', 'number', true)}
         {renderInput('paymentDetailData', 'otherC', 'Other Charges', 'number', true)}
-        {renderInput('paymentDetailData', 'total', 'Total Amount', 'number', true)}
       </div>
       {children && <div className="mt-6">{children}</div>}
+      <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-4'>
+        {renderInput('paymentDetailData', 'total', 'Total Amount', 'number', true)}
+      </div>
     </fieldset>
   );
 };
