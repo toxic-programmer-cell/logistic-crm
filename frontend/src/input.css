@@ -1,3 +1,49 @@
 /* @import "tailwindcss/preflight";
 @import "tailwindcss/utilities";  */
 @import "tailwindcss";
+
+/*
+  PDF Export Fallback Styles
+  These styles are applied when the 'pdf-export-styles' class is active
+  to provide HEX/RGB fallbacks for Tailwind classes that might use oklch().
+*/
+
+.pdf-export-styles body, .pdf-export-styles #docket-details-content {
+  /* Ensure a solid background for the captured content if needed */
+  background-color: #ffffff !important; /* Or your desired light mode background */
+  /* If you want to capture dark mode, ensure dark mode styles provide HEX/RGB fallbacks too */
+}
+
+/* Common Text Colors */
+.pdf-export-styles .text-indigo-600 { color: #4f46e5 !important; }
+.pdf-export-styles .dark\:text-indigo-400 { color: #818cf8 !important; } /* Fallback for dark mode */
+.pdf-export-styles .text-gray-900 { color: #111827 !important; }
+.pdf-export-styles .text-gray-800 { color: #1f2937 !important; }
+.pdf-export-styles .text-gray-700 { color: #374151 !important; }
+.pdf-export-styles .text-gray-600 { color: #4b5563 !important; }
+.pdf-export-styles .text-gray-500 { color: #6b7280 !important; }
+.pdf-export-styles .text-gray-400 { color: #9ca3af !important; }
+.pdf-export-styles .text-gray-300 { color: #d1d5db !important; }
+.pdf-export-styles .text-white { color: #ffffff !important; }
+.pdf-export-styles .text-red-500 { color: #ef4444 !important; }
+.pdf-export-styles .text-green-600 { color: #16a34a !important; }
+.pdf-export-styles .text-blue-600 { color: #2563eb !important; }
+
+/* Common Background Colors */
+.pdf-export-styles .bg-gray-50 {
+  background-color: #f9fafb !important;
+}
+.pdf-export-styles .bg-gray-100 { background-color: #f3f4f6 !important; }
+.pdf-export-styles .bg-gray-800 { background-color: #1f2937 !important; }
+.pdf-export-styles .bg-gray-900 {
+  background-color: #111827 !important;
+}
+.pdf-export-styles .bg-white { background-color: #ffffff !important; }
+.pdf-export-styles .dark\:bg-gray-800 { background-color: #1f2937 !important; }
+.pdf-export-styles .dark\:bg-gray-900 { background-color: #111827 !important; }
+
+/* Common Border Colors */
+.pdf-export-styles .border-gray-200 { border-color: #e5e7eb !important; }
+.pdf-export-styles .border-gray-300 { border-color: #d1d5db !important; }
+.pdf-export-styles .border-gray-700 { border-color: #374151 !important; }
+.pdf-export-styles .dark\:border-gray-700 { border-color: #374151 !important; }
