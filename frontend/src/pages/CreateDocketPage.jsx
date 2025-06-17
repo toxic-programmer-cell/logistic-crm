@@ -174,12 +174,20 @@ const CreateDocketPages = () => {
 
 
       <form onSubmit={handleSubmit} className="space-y-8">
+        {/* Docket Detail */}
         <DocketDetailsForm formData={formData.docketData} handleChange={handleNestedChange} renderInput={renderInput} />
-        <div className="flex flex-col md:flex-row md:space-x-8 space-y-8 md:space-y-0">
-          <div className="flex-1"><ClientDetailsForm formData={formData.clientData} handleChange={handleNestedChange} renderInput={renderInput} /></div>
-          <div className="flex-1"><ReceiverClientDetailsForm formData={formData.reciverClientData} handleChange={handleNestedChange} renderInput={renderInput} /></div>
-        </div>
-        <PaymentDetailsForm formData={formData.paymentDetailData} handleChange={handleNestedChange} renderInput={renderInput} />        
+
+        <fieldset className="p-4 border border-gray-300 dark:border-gray-700 rounded-md">
+          <legend className="text-lg font-semibold px-2 text-gray-700 dark:text-gray-200">Client Details</legend>
+          <div className="flex flex-col md:flex-row md:space-x-8 space-y-8 md:space-y-0">
+            <div className="flex-1"><ClientDetailsForm formData={formData.clientData} handleChange={handleNestedChange} renderInput={renderInput} /></div>
+            <div className="hidden md:block w-px bg-gray-300 dark:bg-gray-700" />
+            <div className="flex-1"><ReceiverClientDetailsForm formData={formData.reciverClientData} handleChange={handleNestedChange} renderInput={renderInput} /></div>
+          </div>
+        </fieldset>
+
+        <PaymentDetailsForm formData={formData.paymentDetailData} handleChange={handleNestedChange} renderInput={renderInput} />
+
         <TrackingLogForm formData={formData.trackingLogData} handleChange={handleNestedChange} renderInput={renderInput} />
 
         <div className="pt-5">
