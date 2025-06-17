@@ -19,6 +19,7 @@ const UpdateDocketPage = () => {
         </button>
       <h1 className="text-2xl font-semibold mb-4 text-gray-800 dark:text-white">Update Docket - {docketId}</h1>
       <p className="text-gray-600 dark:text-gray-400">This is where the form to update the docket will go. (Full form implementation is pending)</p>
+      {/* TODO: Implement the full docket update form here, similar to CreateDocketPage.jsx */}
     </div>
   );
 };

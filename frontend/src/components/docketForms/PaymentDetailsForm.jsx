@@ -1,6 +1,6 @@
 import React from 'react';
 
-const PaymentDetailsForm = ({ formData, handleChange, renderInput, children }) => {
+const PaymentDetailsForm = ({ formData, gstFormData, handleChange, renderInput, children }) => {
   return (
     <fieldset className="p-4 border border-gray-300 dark:border-gray-700 rounded-md">
       <legend className="text-lg font-semibold px-2 text-gray-700 dark:text-gray-200">Payment Details</legend>
@@ -18,10 +18,16 @@ const PaymentDetailsForm = ({ formData, handleChange, renderInput, children }) =
         {renderInput('paymentDetailData', 'clearence', 'Clearance Charges (Backend: clearence)', 'number', true)}
         {renderInput('paymentDetailData', 'otherC', 'Other Charges', 'number', true)}
       </div>
-      {children && <div className="mt-6">{children}</div>}
-      <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-4'>
+      {/* GST Details Integrated Here */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
+        {renderInput('gstData', 'sgst', 'SGST Amount', 'number', true)}
+        {renderInput('gstData', 'cgst', 'CGST Amount', 'number', true)}
+        {renderInput('gstData', 'igst', 'IGST Amount', 'number', true)}
         {renderInput('paymentDetailData', 'total', 'Total Amount', 'number', true)}
       </div>
+      {/* <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-4'>
+        {renderInput('paymentDetailData', 'total', 'Total Amount', 'number', true)}
+      </div> */}
     </fieldset>
   );
 };

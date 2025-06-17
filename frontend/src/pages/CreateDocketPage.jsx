@@ -4,7 +4,6 @@ import ClientDetailsForm from '../components/docketForms/ClientDetailsForm';
 import ReceiverClientDetailsForm from '../components/docketForms/ReceiverClientDetailsForm';
 import DocketDetailsForm from '../components/docketForms/DocketDetailsForm';
 import PaymentDetailsForm from '../components/docketForms/PaymentDetailsForm';
-import GstDetailsForm from '../components/docketForms/GstDetailsForm';
 import BranchDetailsForm from '../components/docketForms/BranchDetailsForm';
 import TrackingLogForm from '../components/docketForms/TrackingLogForm';
 import { toast } from 'react-toastify';
@@ -180,10 +179,7 @@ const CreateDocketPages = () => {
           <div className="flex-1"><ClientDetailsForm formData={formData.clientData} handleChange={handleNestedChange} renderInput={renderInput} /></div>
           <div className="flex-1"><ReceiverClientDetailsForm formData={formData.reciverClientData} handleChange={handleNestedChange} renderInput={renderInput} /></div>
         </div>
-        <PaymentDetailsForm formData={formData.paymentDetailData} handleChange={handleNestedChange} renderInput={renderInput}>
-          <GstDetailsForm formData={formData.gstData} handleChange={handleNestedChange} renderInput={renderInput} />
-        </PaymentDetailsForm>
-        
+        <PaymentDetailsForm formData={formData.paymentDetailData} handleChange={handleNestedChange} renderInput={renderInput} />        
         <TrackingLogForm formData={formData.trackingLogData} handleChange={handleNestedChange} renderInput={renderInput} />
 
         <div className="pt-5">
