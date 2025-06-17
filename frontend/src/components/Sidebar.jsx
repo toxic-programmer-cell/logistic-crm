@@ -21,7 +21,7 @@ const navLinks = [
   { icon: <HomeIcon size={20} />, label: 'Master', path: '/',
     subLinks: [
       { label: 'Docket', path: '/dashboard/docket' },
-      { label: 'Get Docket', path: '/dashboard/get-docket' },
+      { label: 'View Docket', path: '/dashboard/get-docket' },
       { label: 'System Health', path: '/dashboard/health' },
     ],
   },

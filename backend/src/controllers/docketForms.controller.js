@@ -181,6 +181,24 @@ const getAllDockets = asyncHandler(async (req, res) => {
     );
 });
 
+// --- READ Single Docket by ID ---
+const getDocketById = asyncHandler(async (req, res) => {
+    const { docketId } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(docketId)) {
+        throw new ApiError(400, "Invalid Docket ID format.");
+    }
+
+    const docket = await populateDocketDetails(Docket.findById(docketId)).lean();
+
+    if (!docket) {
+        throw new ApiError(404, `Docket not found with ID: ${docketId}`);
+    }
+
+    return res.status(200).json(
+        new ApiResponse(200, docket, "Docket retrieved successfully by ID.")
+    );
+});
+
 // --- READ Single Docket by Docket Number, email, vender, client phone number---
 const getSingleDocket = asyncHandler(async (req, res) => {
     // console.log("docketrunning");
@@ -427,5 +445,6 @@ export {
     getAllDockets,
     getSingleDocket,
     updateFullDocketEntry,
-    deleteDocketEntry
+    deleteDocketEntry,
+    getDocketById
 };

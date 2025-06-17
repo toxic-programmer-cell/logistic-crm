@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
-import { createFullDocketEntry, deleteDocketEntry, getAllDockets, getSingleDocket, updateFullDocketEntry } from "../controllers/docketForms.controller.js";
+import { createFullDocketEntry, deleteDocketEntry, getAllDockets, getDocketById, getSingleDocket, updateFullDocketEntry } from "../controllers/docketForms.controller.js";
 
 const router = Router();
 
@@ -14,6 +14,7 @@ router.route("/lookup/:identifier")
 .get(getSingleDocket);  // Get a single Docket by identifier
 
 router.route("/:docketId")
+.get(getDocketById)
 .patch(updateFullDocketEntry)  // Update a Docket by ID
 .delete(deleteDocketEntry);  // Delete a Docket by ID
 

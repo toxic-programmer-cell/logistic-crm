@@ -3,6 +3,9 @@ import { Routes, Route } from 'react-router-dom';
 import Sidebar from './components/Sidebar';
 import Dashboard from './pages/Dashbord';
 import CreateDocketPage from './pages/CreateDocketPage';
+import GetDocket from './pages/GetDocket';
+import DocketDetailPage from './pages/DocketDetailPage';
+import UpdateDocketPage from './pages/UpdateDocketPage';
 
 export default function Home() {
 
@@ -19,6 +22,9 @@ export default function Home() {
             <Route path="/user" element={<div className="p-6">user</div>} />
             <Route path="/reports" element={<div className="p-6">reports</div>} />
             <Route path="/dashboard/docket" element={<CreateDocketPage />} />
+            <Route path="/dashboard/get-docket" element={<GetDocket />} />
+            <Route path="/dashboard/docket/:docketId" element={<DocketDetailPage />} />
+            <Route path="/dashboard/docket/update/:docketId" element={<UpdateDocketPage />} />
           </Routes>
         </main>
       </div>
