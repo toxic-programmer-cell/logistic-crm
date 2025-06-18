@@ -67,9 +67,26 @@ const CreateDocketPages = () => {
       remarks: '',
     },
   });
-
   const [loading, setLoading] = useState(false);
+  const initialErrorState = {
+    reciverClientData: {},
+    gstData: {},
+    paymentDetailData: {},
+    clientData: {},
+    docketData: {},
+    branchData: {},
+    trackingLogData: {},
+  };
+  const [errors, setErrors] = useState(initialErrorState);
 
+  // Helper to generate a more readable field name for error messages
+  const formatFieldName = (fieldName) => {
+    return fieldName
+      .replace(/([A-Z])/g, ' $1') // Add space before capital letters
+      .replace(/^./, (str) => str.toUpperCase()); // Capitalize first letter
+  };
+
+  // Handle changes for nested form data
   const handleNestedChange = (section, e) => {
     const { name, value, type } = e.target;
     setFormData(prev => ({
@@ -81,9 +98,105 @@ const CreateDocketPages = () => {
     }));
   };
 
+  const validate = () => {
+    const newErrors = JSON.parse(JSON.stringify(initialErrorState)); // Deep clone
+    let isValid = true;
+    const { gstData, paymentDetailData, clientData, docketData, reciverClientData, branchData, trackingLogData } = formData;
+
+    // GST Data Validation
+    ['sgst', 'cgst', 'igst'].forEach(field => {
+      if (String(gstData[field]).trim() === '') {
+        newErrors.gstData[field] = `${formatFieldName(field)} is required.`;
+        isValid = false;
+      } else if (isNaN(parseFloat(gstData[field]))) {
+        newErrors.gstData[field] = `${formatFieldName(field)} must be a valid number.`;
+        isValid = false;
+      }
+    });
+
+    // Client Data Validation
+    const requiredClientFields = ['fullName', 'email', 'phoneNumber', 'address', 'gstNumber', 'consignor'];
+    requiredClientFields.forEach(field => {
+      if (!clientData[field]?.trim()) {
+        newErrors.clientData[field] = `${formatFieldName(field)} is required.`;
+        isValid = false;
+      }
+    });
+    if (clientData.email?.trim() && !/\S+@\S+\.\S+/.test(clientData.email)) {
+        newErrors.clientData.email = "Invalid email format.";
+        isValid = false;
+    }
+
+    // Receiver Client Data Validation
+    const hasAnyReciverClientData = Object.values(reciverClientData).some(val => typeof val === 'string' && val.trim() !== '');
+    if (hasAnyReciverClientData) {
+        const requiredReceiverFields = ['fullName', 'email', 'phoneNumber', 'address', 'gstNumber', 'conssignee'];
+        requiredReceiverFields.forEach(field => {
+            if (!reciverClientData[field]?.trim()) {
+                newErrors.reciverClientData[field] = `${formatFieldName(field)} is required if providing receiver details.`;
+                isValid = false;
+            }
+        });
+        if (reciverClientData.email?.trim() && !/\S+@\S+\.\S+/.test(reciverClientData.email)) {
+            newErrors.reciverClientData.email = "Invalid email format for receiver.";
+            isValid = false;
+        }
+    }
+
+    // PaymentDetail Data Validation
+    const requiredPaymentFields = ['declaredValue', 'vendor', 'vendorNumber', 'fwdNetwork', 'fwdNumber', 'pkts', 'actualWeight', 'chargeWeight', 'rate', 'frieghtOn', 'clearence', 'otherC', 'total'];
+    const numericPaymentFields = ['declaredValue', 'pkts', 'actualWeight', 'chargeWeight', 'rate', 'clearence', 'otherC', 'total'];
+    requiredPaymentFields.forEach(field => {
+        const value = paymentDetailData[field];
+        if (String(value).trim() === '') {
+            newErrors.paymentDetailData[field] = `${formatFieldName(field)} is required.`;
+            isValid = false;
+        } else if (numericPaymentFields.includes(field) && isNaN(parseFloat(value))) {
+            newErrors.paymentDetailData[field] = `${formatFieldName(field)} must be a valid number.`;
+            isValid = false;
+        }
+    });
+
+    // Docket Data Validation
+    const requiredDocketFields = ['docketNumber', 'origin', 'destination', 'payType', 'mode', 'packType', 'item', 'docketStatus'];
+    requiredDocketFields.forEach(field => {
+        if (!docketData[field]?.toString().trim()) {
+            newErrors.docketData[field] = `${formatFieldName(field)} is required.`;
+            isValid = false;
+        }
+    });
+    if (docketData.date && isNaN(new Date(docketData.date).getTime())) {
+        newErrors.docketData.date = "Invalid date format.";
+        isValid = false;
+    }
+
+    // Tracking Log Data (Conditional)
+    const hasTrackingStatus = trackingLogData.status?.trim();
+    const hasTrackingLocation = trackingLogData.location?.trim();
+    if (hasTrackingStatus && !hasTrackingLocation) {
+        newErrors.trackingLogData.location = "Location is required if status is provided.";
+        isValid = false;
+    }
+    if (!hasTrackingStatus && hasTrackingLocation) {
+        newErrors.trackingLogData.status = "Status is required if location is provided.";
+        isValid = false;
+    }
+
+    setErrors(newErrors);
+    return isValid;
+  };
+
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setErrors(initialErrorState); // Clear previous errors
+
+    if (!validate()) {
+      setLoading(false);
+      // toast.error("Please correct the errors in the form."); // Optional: general toast for multiple errors
+      return;
+    }
 
     const token = localStorage.getItem('accessToken');
     // console.log('Token being sent:', token);
@@ -135,9 +248,30 @@ const CreateDocketPages = () => {
 
       toast.success( 'Docket entry created successfully!' );
     } catch (error) {
-        console.error("Error creating docket entry:", error);
-        const errorMessage = error.response?.data?.message || error.message || 'Failed to create docket entry.';
-        toast.error( errorMessage );
+        console.error("Error creating docket entry:", error.response?.data || error.message);
+        const apiErrorMessage = error.response?.data?.message || error.message || 'Failed to create docket entry.';
+
+        if (error.response?.status === 409 && apiErrorMessage.includes("already exists")) {
+            const newErrorsState = JSON.parse(JSON.stringify(initialErrorState)); // Start with a clean error slate for this specific API error
+            let fieldSpecificErrorSet = false; 
+            
+            // Try to parse the field from the message
+            if (apiErrorMessage.toLowerCase().includes("receiver client") && apiErrorMessage.toLowerCase().includes("email")) {
+                newErrorsState.reciverClientData.email = apiErrorMessage; // Use the detailed message from backend
+                fieldSpecificErrorSet = true;
+            } else if (apiErrorMessage.toLowerCase().includes("client") && apiErrorMessage.toLowerCase().includes("email")) {
+                newErrorsState.clientData.email = apiErrorMessage;
+                fieldSpecificErrorSet = true;
+            } else if (apiErrorMessage.toLowerCase().includes("docket") && apiErrorMessage.toLowerCase().includes("docketnumber")) {
+                newErrorsState.docketData.docketNumber = apiErrorMessage;
+                fieldSpecificErrorSet = true;
+            } else {
+                toast.error(apiErrorMessage); // Show the specific 409 message if field isn't parsed
+            }
+            setErrors(newErrorsState);
+        } else {
+            toast.error(apiErrorMessage); // General error toast for other issues
+        }
     } finally {
       setLoading(false);
     }
@@ -160,6 +294,9 @@ const CreateDocketPages = () => {
         step={type === "number" ? "any" : undefined}
         {...props}
       />
+      {errors[section] && errors[section][name] && (
+        <p className="mt-1 text-xs text-red-500">{errors[section][name]}</p>
+      )}
     </div>
   );
 

@@ -37,6 +37,8 @@ const createFullDocketEntry = asyncHandler(async (req, res) => {
         trackingLogData // Optional: for an initial tracking log
     } = req.body;
 
+    const validationError = [];
+
     // --- Basic Validation for Core Data ---
     if (!docketData || !clientData || !paymentDetailData || !gstData) {
         throw new ApiError(400, "Docket, Client, PaymentDetail, and GST data are required.");
@@ -93,10 +95,18 @@ const createFullDocketEntry = asyncHandler(async (req, res) => {
 
     try {
         newGst = await Gst.create([gstData], { session });
+        // DEBUG
+        // if (!newGst || newGst.length === 0) {
+        //     throw new ApiError(500, "Failed to create GST details during transaction.");
+        // }
         newGst = newGst[0];
 
         if (reciverClientData && Object.keys(reciverClientData).length > 0) {
             newReciverClient = await ReciverClient.create([reciverClientData], { session });
+            // DEBUG
+            // if (!newReciverClient || newReciverClient.length === 0) {
+            //     throw new ApiError(500, "Failed to create Receiver Client details during transaction.");
+            // }
             newReciverClient = newReciverClient[0];
         }
 
@@ -105,19 +115,37 @@ const createFullDocketEntry = asyncHandler(async (req, res) => {
             clientPayload.reciverClient = newReciverClient._id;
         }
         newClient = await Client.create([clientPayload], { session });
+        // DEBUG
+        // if (!newClient || newClient.length === 0) {
+        //     throw new ApiError(500, "Failed to create Client details during transaction.");
+        // }
         newClient = newClient[0];
 
         const paymentDetailPayload = { ...paymentDetailData, gst: newGst._id };
         newPaymentDetail = await PaymentDetail.create([paymentDetailPayload], { session });
+        // DEBUG
+        // if (!newPaymentDetail || newPaymentDetail.length === 0) {
+        //     throw new ApiError(500, "Failed to create Payment details during transaction.");
+        // }
         newPaymentDetail = newPaymentDetail[0];
 
         if (branchData && branchData.name) {
             newBranch = await Branch.create([branchData], { session });
+            // DEBUG
+            // if (!newBranch || newBranch.length === 0) {
+            //     throw new ApiError(500, "Failed to create Branch details during transaction.");
+            // }
+
             newBranch = newBranch[0];
         }
 
         if (trackingLogData && trackingLogData.status && trackingLogData.location) {
             newTrackingLog = await TrackingLog.create([trackingLogData], { session });
+            // DEBUG
+            // if (!newTrackingLog || newTrackingLog.length === 0) {
+            //     throw new ApiError(500, "Failed to create Tracking Log during transaction.");
+            // }
+
             newTrackingLog = newTrackingLog[0];
         }
 
@@ -132,12 +160,19 @@ const createFullDocketEntry = asyncHandler(async (req, res) => {
             docketPayload.trackingLog = newTrackingLog._id;
         }
         newDocket = await Docket.create([docketPayload], { session });
+        // DEBUG
+        // if (!newDocket || newDocket.length === 0) {
+        //     throw new ApiError(500, "Failed to create Docket during transaction.");
+        // }
+
         newDocket = newDocket[0];
 
         await session.commitTransaction();
 
         const populatedDocket = await populateDocketDetails(Docket.findById(newDocket._id)).lean();
         if (!populatedDocket) {
+            // console.log('issue here');
+            
              throw new ApiError(500, "Docket created but failed to retrieve for response.");
         }
 
@@ -160,8 +195,41 @@ const createFullDocketEntry = asyncHandler(async (req, res) => {
             await session.abortTransaction();
         }
         console.error("Error during createFullDocketEntry:", error);
-        if (error instanceof ApiError) throw error;
-        throw new ApiError(500, error.message || "Failed to create docket entry. Transaction rolled back.");
+        if (error instanceof ApiError){
+            throw error;
+        } 
+        
+        if (error.name === 'ValidationError') { // Mongoose validation error
+            // Extract a more user-friendly message from Mongoose's verbose error object
+            const messages = Object.values(error.errors).map(val => val.message);
+            const errorMessage = messages.join(', ');
+            throw new ApiError(400, `Validation Failed: ${errorMessage || "Please check your input."}`);
+        }
+
+        if (error.name === 'MongoServerError' && error.code === 11000) {
+            let conflictingField = "Unknown field";
+            let conflictingValue = "Unknown value";
+            if (error.keyValue) {
+                conflictingField = Object.keys(error.keyValue)[0];
+                conflictingValue = error.keyValue[conflictingField];
+            }
+            
+            let modelMessage = "An entry";
+            // Make messages more specific based on collection name from error
+            if (error.message.includes('reciverclients')) {
+                modelMessage = "Receiver client";
+                conflictingField = 'email'; // Standardize for known unique fields
+            } else if (error.message.includes('clients')) {
+                modelMessage = "Client";
+                conflictingField = 'email'; // Assuming email is unique here too
+            } else if (error.message.includes('dockets') && conflictingField === 'docketNumber') {
+                modelMessage = "Docket";
+            }
+
+            throw new ApiError(409, `${modelMessage} with this ${conflictingField} ('${conflictingValue}') already exists.`);
+        }
+
+        throw new ApiError(500, error.message || "Failed to create docket entry. An unexpected error occurred. Transaction rolled back.");
     } finally {
         session.endSession();
     }
