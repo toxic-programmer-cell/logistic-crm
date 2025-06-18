@@ -5,6 +5,7 @@ const docketSchema = new Schema({
     docketNumber: {
         type: String,
         required: true,
+        unique: true,
         index: true
     },
     date: {

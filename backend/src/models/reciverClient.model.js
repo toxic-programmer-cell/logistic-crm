@@ -23,8 +23,7 @@ const reciverClientSchema = new Schema({
     email: {
         type: String,
         required: true,
-        lowercase: true,
-        unique: true
+        lowercase: true
     },
     gstNumber: {
         type: String,

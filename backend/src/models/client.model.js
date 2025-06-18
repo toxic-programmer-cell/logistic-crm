@@ -19,7 +19,6 @@ const clientSchema = new Schema({
         type: String,
         required: true,
         lowercase: true,
-        unique: true,
         index: true
     },
     address: {

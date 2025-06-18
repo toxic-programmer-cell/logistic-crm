@@ -95,18 +95,10 @@ const createFullDocketEntry = asyncHandler(async (req, res) => {
 
     try {
         newGst = await Gst.create([gstData], { session });
-        // DEBUG
-        // if (!newGst || newGst.length === 0) {
-        //     throw new ApiError(500, "Failed to create GST details during transaction.");
-        // }
         newGst = newGst[0];
 
         if (reciverClientData && Object.keys(reciverClientData).length > 0) {
             newReciverClient = await ReciverClient.create([reciverClientData], { session });
-            // DEBUG
-            // if (!newReciverClient || newReciverClient.length === 0) {
-            //     throw new ApiError(500, "Failed to create Receiver Client details during transaction.");
-            // }
             newReciverClient = newReciverClient[0];
         }
 
@@ -115,37 +107,19 @@ const createFullDocketEntry = asyncHandler(async (req, res) => {
             clientPayload.reciverClient = newReciverClient._id;
         }
         newClient = await Client.create([clientPayload], { session });
-        // DEBUG
-        // if (!newClient || newClient.length === 0) {
-        //     throw new ApiError(500, "Failed to create Client details during transaction.");
-        // }
         newClient = newClient[0];
 
         const paymentDetailPayload = { ...paymentDetailData, gst: newGst._id };
         newPaymentDetail = await PaymentDetail.create([paymentDetailPayload], { session });
-        // DEBUG
-        // if (!newPaymentDetail || newPaymentDetail.length === 0) {
-        //     throw new ApiError(500, "Failed to create Payment details during transaction.");
-        // }
         newPaymentDetail = newPaymentDetail[0];
 
         if (branchData && branchData.name) {
             newBranch = await Branch.create([branchData], { session });
-            // DEBUG
-            // if (!newBranch || newBranch.length === 0) {
-            //     throw new ApiError(500, "Failed to create Branch details during transaction.");
-            // }
-
             newBranch = newBranch[0];
         }
 
         if (trackingLogData && trackingLogData.status && trackingLogData.location) {
             newTrackingLog = await TrackingLog.create([trackingLogData], { session });
-            // DEBUG
-            // if (!newTrackingLog || newTrackingLog.length === 0) {
-            //     throw new ApiError(500, "Failed to create Tracking Log during transaction.");
-            // }
-
             newTrackingLog = newTrackingLog[0];
         }
 

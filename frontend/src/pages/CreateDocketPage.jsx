@@ -256,13 +256,7 @@ const CreateDocketPages = () => {
             let fieldSpecificErrorSet = false; 
             
             // Try to parse the field from the message
-            if (apiErrorMessage.toLowerCase().includes("receiver client") && apiErrorMessage.toLowerCase().includes("email")) {
-                newErrorsState.reciverClientData.email = apiErrorMessage; // Use the detailed message from backend
-                fieldSpecificErrorSet = true;
-            } else if (apiErrorMessage.toLowerCase().includes("client") && apiErrorMessage.toLowerCase().includes("email")) {
-                newErrorsState.clientData.email = apiErrorMessage;
-                fieldSpecificErrorSet = true;
-            } else if (apiErrorMessage.toLowerCase().includes("docket") && apiErrorMessage.toLowerCase().includes("docketnumber")) {
+            if (apiErrorMessage.toLowerCase().includes("docket") && apiErrorMessage.toLowerCase().includes("docketnumber")) {
                 newErrorsState.docketData.docketNumber = apiErrorMessage;
                 fieldSpecificErrorSet = true;
             } else {
