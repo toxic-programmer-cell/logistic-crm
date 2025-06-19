@@ -1,58 +1,44 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import axiosInstance from '../api/axiosInstance';
-import { toast } from 'react-toastify';
+import SearchDocket from '../components/SearchDocket';
+import { useDockets } from '../context/DocketContext';
 
 const GetDocket = () => {
-  const [dockets, setDockets] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const navigate = useNavigate();
 
-
-  useEffect(() => {
-    const fetchDockets = async () => {
-      try {
-        setLoading(true);
-        // The route GET /api/v1/dockets/ is handled by getAllDockets in the backend
-        const response = await axiosInstance.get('/dockets/');
-        if (response.data && response.data.success) {
-          setDockets(response.data.data);
-        } else {
-          throw new Error(response.data.message || 'Failed to fetch dockets');
-        }
-        setError(null);
-      } catch (err) {
-        console.error('Error fetching dockets:', err);
-        setError(err.response?.data?.message || err.message || 'An unknown error occurred');
-        toast.error(err.response?.data?.message || err.message || 'Could not fetch dockets.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchDockets();
-  }, []);
+  const {
+    docketsToDisplay,
+    tableTitle,
+    isLoading, // This is for the initial load of all dockets
+    error,     // This is for errors from fetching all dockets or searching
+    activeSearchSingleResult // To know if a search is active
+  } = useDockets();
 
   const handleRowClick = (docketId) => {
     navigate(`/dashboard/docket/${docketId}`)
   }
 
 
-  if (loading) {
-    return <div className="p-6">Loading dockets... </div>;
+  if (isLoading && docketsToDisplay.length === 0 && !activeSearchSingleResult) {
+    return <div className="p-6 text-center">Loading dockets...</div>;
   }
 
-  if (error) {
-    return <div className="p-6 text-red-500">Error: {error}</div>;
+  if (error && docketsToDisplay.length === 0 && !activeSearchSingleResult) {
+    return <div className="p-6 text-red-500 text-center">Error: {error}</div>;
   }
 
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-semibold mb-4 text-gray-800 dark:text-white">All Dockets</h1>
-      {dockets.length === 0 ? (
-        <p className="text-gray-600 dark:text-gray-400">No dockets found.</p>
-      ) : (
+      <SearchDocket />
+      <h1 className="text-2xl font-semibold my-4 text-gray-800 dark:text-white">{tableTitle}</h1>
+      
+      {docketsToDisplay.length === 0 && !isLoading && (
+        <p className="text-gray-600 dark:text-gray-400 text-center">
+          {activeSearchSingleResult === null && !error ? "No dockets found." : ""}
+        </p>
+      )}
+
+      {docketsToDisplay.length > 0 && (
         <div className="overflow-x-auto shadow-md sm:rounded-lg">
           <table className="min-w-full text-sm text-left text-gray-500 dark:text-gray-400">
             <thead className="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
@@ -66,7 +52,7 @@ const GetDocket = () => {
               </tr>
             </thead>
             <tbody>
-              {dockets.map((docket, index) => (
+              {docketsToDisplay.map((docket, index) => (
                 <tr
                   key={docket._id}
                   className="bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 cursor-pointer"

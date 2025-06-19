@@ -5,6 +5,7 @@ import Login from './pages/Login';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import GlobalToastContainer from './components/GlobalToastContainer';
+import { DocketProvider } from './context/DocketContext';
 
 function AppRoutes() {
   const { isAuthenticated } = useAuth();
@@ -25,10 +26,12 @@ function App() {
   return (
       <AuthProvider>
         <ThemeProvider>
-          <Router>
-            <GlobalToastContainer />
-            <AppRoutes />
-          </Router>
+          <DocketProvider>
+            <Router>
+              <GlobalToastContainer />
+              <AppRoutes />
+            </Router>
+          </DocketProvider>
         </ThemeProvider>
       </AuthProvider>
   )
