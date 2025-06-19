@@ -17,21 +17,20 @@ const generateAccessAndRefreshToken = async (userId) => {
         if (!user) {
             throw new ApiError(404, "User not found")
         }
-    // console.log("User object:", user);
-        // console.log("AccessToken secret:", process.env.ACCESS_TOKEN_SECRET);
-        // console.log("AccessToken expiry:", process.env.ACCESS_TOKEN_EXPIRY);
+
         const accessToken = user.generateAccessToken()
         const refreshToken = user.generateRefreshToken()
-        // console.log("Access Token:", accessToken);
-        // console.log("Refressh Token:", refreshToken);
         
     
-        user.refreshToken = refreshToken
+        user.refreshToken = refreshToken;
         await user.save({validateBeforeSave: false})
         return { accessToken, refreshToken }
     } catch (error) {
+        if (error instanceof ApiError) {
+            throw error;
+        }
         console.error("Token Generation Error Details:", error);
-        throw new ApiError(500, "Failed to generate tokens")
+        throw new ApiError(500, "Failed to generate tokens due to an internal server error.");
     }
 }
 
@@ -90,44 +89,52 @@ const registerUser = asyncHandler( async (req, res) => {
 
 // LOGINUSER CONTROLLER
 const loginUser = asyncHandler( async (req, res) => {
-    const {email, password} = req.body
-
-    if ([email, password].some((field) => field?.trim() === "")) {
-        throw new ApiError(400, "Email and password are required")
-    }
-
-    const user = await User.findOne({email})
-
-    if (!user) {
-        throw new ApiError(404, "User not found")
-    }
-
-    const isPasswordValid = await user.isPasswordCorrect(password)
-
-    if (!isPasswordValid) {
-        throw new ApiError(401, "Invalid email or password")  
-    }
-
-    const { accessToken, refreshToken } = await generateAccessAndRefreshToken(user._id)
-
-    const loggedInUser = await User.findById(user._id).select("-password -refreshToken")
-
-    const option = {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-    }
-
-    return res
-    .status(200)
-    .cookie("refreshToken", refreshToken, option)
-    .cookie("accessToken", accessToken, option)
-    .json(
-        new ApiResponse(
-            200,
-            {user: loggedInUser, accessToken},
-            "User logged in successfully"
+    try {
+        const {email, password} = req.body
+    
+        if ([email, password].some((field) => field?.trim() === "")) {
+            throw new ApiError(400, "Email and password are required")
+        }
+    
+        const user = await User.findOne({email})
+    
+        if (!user) {
+            throw new ApiError(404, "User not found")
+        }
+    
+        const isPasswordValid = await user.isPasswordCorrect(password)
+    
+        if (!isPasswordValid) {
+            throw new ApiError(401, "Invalid email or password")  
+        }
+    
+        const { accessToken, refreshToken } = await generateAccessAndRefreshToken(user._id)
+    
+        const loggedInUser = await User.findById(user._id).select("-password -refreshToken")
+    
+        const option = {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+        }
+    
+        // Send refresh token as HttpOnly cookie
+        res.cookie('refreshToken', refreshToken, option, {
+          sameSite: 'Strict',
+          maxAge: process.env.REFRESH_TOKEN_EXPIRY
+        });
+    
+        return res
+        .status(200)
+        .json(
+            new ApiResponse(
+                200,
+                {user: loggedInUser, accessToken},
+                "User logged in successfully"
+            )
         )
-    )
+    } catch (error) {
+        next(error)
+    }
 
 })
 

@@ -6,11 +6,10 @@ const axiosInstance = axios.create({
   withCredentials: true,
 });
 
-// Variable to store the refresh token promise
-let isRefreshing = false;
-// Array to store failed requests while token is being refreshed
-let failedQueue = [];
+let isRefreshing = false;    // Variable to store the refresh token promise
+let failedQueue = [];    // Array to store failed requests while token is being refreshed
 
+// Helper to resolve/reject all queued requests
 const processQueue = (error, token = null) => {
   failedQueue.forEach(prom => {
     if (error) {
@@ -44,7 +43,7 @@ axiosInstance.interceptors.response.use(
 
     // Exit early if refresh request itself fails
     if (error.response?.status === 401 && originalRequest.url === '/users/refresh-token') {
-        console.error('Refresh token request failed. Logging out.');
+        console.warn('❌ Refresh token invalid. Logging out...');
         localStorage.removeItem('accessToken');
 
         window.location.href = '/login';
@@ -59,7 +58,7 @@ axiosInstance.interceptors.response.use(
             failedQueue.push({ resolve, reject });
             })
             .then(token => {
-            originalRequest.headers['Authorization'] = 'Bearer ' + token;
+            originalRequest.headers['Authorization'] = `Bearer ${token}`;
             return axiosInstance(originalRequest); // Retry with new token
             })
             .catch(err => {
@@ -71,7 +70,7 @@ axiosInstance.interceptors.response.use(
         isRefreshing = true;
 
         try {
-            console.log('Access token expired. Attempting to refresh token...');
+            console.log('🔁 Attempting token refresh...');
 
             // The user.controller.js refreshAccessToken endpoint returns the new accessToken in the response body.
             const refreshResponse = await axios.post(
@@ -86,7 +85,7 @@ axiosInstance.interceptors.response.use(
                 throw new Error('No new access token returned.');
             }
 
-            console.log('New access token obtained:', newAccessToken);
+            console.log('New access token obtained:', newAccessToken); //DEBUG
             localStorage.setItem('accessToken', newAccessToken);
 
             // Update the default Authorization header for subsequent requests
@@ -100,9 +99,7 @@ axiosInstance.interceptors.response.use(
             console.error('Token refresh failed:', refreshError);
             processQueue(refreshError, null); // Reject queued requests
             localStorage.removeItem('accessToken');
-            // Consider a more robust logout (e.g., using AuthContext, redirecting)
             window.location.href = '/login'; // Simple redirect
-            
             
             return Promise.reject(refreshError);
         } finally {
