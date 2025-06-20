@@ -24,15 +24,16 @@ function AppRoutes() {
 function App() {
 
   return (
+    
       <AuthProvider>
-        <ThemeProvider>
-          <DocketProvider>
-            <Router>
-              <GlobalToastContainer />
-              <AppRoutes />
-            </Router>
-          </DocketProvider>
-        </ThemeProvider>
+        <DocketProvider>
+          <ThemeProvider>
+              <Router>
+                <GlobalToastContainer />
+                <AppRoutes />
+              </Router>
+          </ThemeProvider>
+        </DocketProvider>
       </AuthProvider>
   )
 }

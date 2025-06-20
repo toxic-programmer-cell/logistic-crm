@@ -1,11 +1,18 @@
 import React, { createContext, useState, useEffect, useContext, useCallback } from 'react';
 import axiosInstance from '../api/axiosInstance';
 import { toast } from 'react-toastify';
+import { useAuth } from './AuthContext'; // Assuming you have an AuthContext for authentication
 
 const DocketContext = createContext();
+ // Get authentication status from AuthContext
 
 export const useDockets = () => {
-  return useContext(DocketContext);
+  
+  const context = useContext(DocketContext);
+    if (context === undefined) {
+        throw new Error('useDockets must be used within a DocketProvider');
+    }
+    return context;
 };
 
 export const DocketProvider = ({ children }) => {
@@ -14,6 +21,8 @@ export const DocketProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isSearching, setIsSearching] = useState(false);
+
+  const { isAuthenticated } = useAuth(); // Get authentication status from AuthContext
 
   const fetchAllDockets = useCallback(async () => {
     setIsLoading(true);
@@ -37,10 +46,22 @@ export const DocketProvider = ({ children }) => {
   }, []);
 
   useEffect(() => {
-    fetchAllDockets();
-  }, [fetchAllDockets]);
+    if (isAuthenticated) {
+      fetchAllDockets();
+    } else {
+      setAllDockets([]);
+      setActiveSearchSingleResult(null);
+      setIsLoading(false); // Ensure loading state is false when not authenticated
+      setError(null);
+    } 
+  }, [fetchAllDockets, isAuthenticated]);
 
   const searchSingleDocket = useCallback(async (searchTerm) => {
+    if (!isAuthenticated) {
+        toast.warn('Please log in to search dockets.');
+        return null;
+    }
+
     if (!searchTerm.trim()) {
       toast.info('Please enter a search term.');
       setActiveSearchSingleResult(null); // Clear search if term is empty
@@ -74,16 +95,16 @@ export const DocketProvider = ({ children }) => {
     } finally {
       setIsSearching(false);
     }
-  }, [allDockets, isLoading, fetchAllDockets]);
+  }, [isAuthenticated, allDockets, fetchAllDockets]);
 
   const clearSearch = useCallback(() => {
     setActiveSearchSingleResult(null);
     setError(null);
     // if (allDockets.length === 0 && !isLoading) fetchAllDockets();
-    if (allDockets.length === 0 && !isLoading) {
+    if (isAuthenticated && allDockets.length === 0 && !isLoading) {
       fetchAllDockets();
     }
-  }, [allDockets, isLoading, fetchAllDockets]);
+  }, [allDockets, isLoading, fetchAllDockets, isAuthenticated]);
 
   const docketsToDisplay = activeSearchSingleResult ? [activeSearchSingleResult] : allDockets;
   const tableTitle = activeSearchSingleResult ? "Search Result" : "All Dockets";

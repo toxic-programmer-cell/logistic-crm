@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+// import axios from 'axios';
 import { toast } from 'react-toastify';
 import { useAuth } from '../context/AuthContext';
 
@@ -9,7 +9,9 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { login } = useAuth();
+  // const { login } = useAuth();
+    const { login: authLogin } = useAuth(); // Renamed to avoid conflict if needed, and to be clear it's from context
+
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -22,21 +24,10 @@ export default function Login() {
     }
 
     try {
-      // Api call to login the user
-      const response = await axios.post('/api/v1/users/login', {email, password});
-
-      console.log('Login Response Status:', response.status);
-
-      const data = response.data;
-
-      if (data && data.success && data.data.accessToken) {
-        localStorage.setItem('accessToken', data.data.accessToken);
-        login();
-        toast.success('Login successful!');
-        navigate('/');
-      } else {
-        toast.error(data.message || 'Login failed. Please check your credentials.');
-      }
+        const loginSuccessful = await authLogin(email, password);
+        if (loginSuccessful) {
+          navigate('/')
+        }
     } catch (err) {
       console.error("Login error:", err);
       if (err.response && err.response.data && err.response.data.message) {

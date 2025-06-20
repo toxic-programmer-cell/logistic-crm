@@ -4,8 +4,17 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { User } from "../models/users.model.js";
 import mongoose  from "mongoose";
 import jwt from "jsonwebtoken";
+import { parseExpiry } from "../utils/parseExpiry.js";
 
-// update , delete
+const refreshTokenExpiry = parseExpiry(process.env.REFRESH_TOKEN_EXPIRY);
+const accessTokenExpiry = parseExpiry(process.env.ACCESS_TOKEN_EXPIRY);
+
+const option = {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            path: '/',
+            sameSite: 'Strict'
+        }
 
 // GENERATING ACCESS AND REFRESH TOKENS
 const generateAccessAndRefreshToken = async (userId) => {
@@ -112,23 +121,17 @@ const loginUser = asyncHandler( async (req, res) => {
     
         const loggedInUser = await User.findById(user._id).select("-password -refreshToken")
     
-        const option = {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-        }
     
         // Send refresh token as HttpOnly cookie
-        res.cookie('refreshToken', refreshToken, option, {
-          sameSite: 'Strict',
-          maxAge: process.env.REFRESH_TOKEN_EXPIRY
-        });
-    
+        res.cookie('refreshToken', refreshToken, { ...option, maxAge: refreshTokenExpiry});
+        res.cookie('accessToken', accessToken, { ...option, maxAge: accessTokenExpiry});
+
         return res
         .status(200)
         .json(
             new ApiResponse(
                 200,
-                {user: loggedInUser, accessToken},
+                {user: loggedInUser},
                 "User logged in successfully"
             )
         )
@@ -137,6 +140,19 @@ const loginUser = asyncHandler( async (req, res) => {
     }
 
 })
+
+// GET CURRENT USER CONTROLLER
+const getCurrentUser = asyncHandler(async (req, res) => {
+    // req.user is attached by verifyJWT middleware
+    if (!req.user) {
+        // This case should ideally be caught by verifyJWT itself,
+        // but as a safeguard:
+        throw new ApiError(401, "User not authenticated");
+    }
+    return res
+        .status(200)
+        .json(new ApiResponse(200, { user: req.user }, "Current user fetched successfully"));
+});
 
 // LOGOUT USER CONTROLLER
 const logoutUser = asyncHandler( async (req, res) => {
@@ -154,10 +170,6 @@ const logoutUser = asyncHandler( async (req, res) => {
         }
     )
 
-    const option = {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-    }
 
     return res
     .status(200)
@@ -202,26 +214,27 @@ const refreshAccessToken = asyncHandler( async (req, res) => {
     
         const { accessToken, refreshToken: newRefreshToken } = await generateAccessAndRefreshToken(user._id)
     
-        const option = {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-        }
         return res
             .status(200)
-            .cookie("refreshToken", newRefreshToken, option)
-            .cookie("accessToken", accessToken, option)
+            .cookie("refreshToken", newRefreshToken, { ...option, maxAge: refreshTokenExpiry })
+            .cookie("accessToken", accessToken, { ...option, maxAge: accessTokenExpiry })
             .json(
                 new ApiResponse(
                     200,
-                    { accessToken, refreshToken: newRefreshToken },
+                    { },
                     "Access token refreshed successfully"
                 )
             )
     } catch (error) {
+        // If it's already an ApiError (e.g., from generateAccessAndRefreshToken), re-throw it
+        if (error instanceof ApiError) {
+            throw error;
+        }
+        // Handle specific JWT errors
         if (error instanceof jwt.JsonWebTokenError || error instanceof jwt.TokenExpiredError) {
             throw new ApiError(401, error?.message || "Invalid Refresh Token");
         }
-        throw new ApiError(500, "Something went wrong while refreshing access token");
+        throw new ApiError(500, error.message || "Something went wrong while refreshing access token");
     }
 })
 
@@ -374,6 +387,7 @@ const deleteuser = asyncHandler( async (req, res) => {
 export {
     registerUser,
     loginUser,
+    getCurrentUser,
     logoutUser,
     refreshAccessToken,
     updateUserProfile,

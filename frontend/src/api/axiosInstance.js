@@ -9,6 +9,7 @@ const axiosInstance = axios.create({
 let isRefreshing = false;    // Variable to store the refresh token promise
 let failedQueue = [];    // Array to store failed requests while token is being refreshed
 
+
 // Helper to resolve/reject all queued requests
 const processQueue = (error, token = null) => {
   failedQueue.forEach(prom => {
@@ -24,10 +25,6 @@ const processQueue = (error, token = null) => {
 // ✅ Add Authorization header to requests
 axiosInstance.interceptors.request.use(
   config => {
-    const token = localStorage.getItem('accessToken');
-    if (token) {
-      config.headers['Authorization'] = `Bearer ${token}`;
-    }
     return config;
   },
   error => Promise.reject(error)
@@ -44,7 +41,6 @@ axiosInstance.interceptors.response.use(
     // Exit early if refresh request itself fails
     if (error.response?.status === 401 && originalRequest.url === '/users/refresh-token') {
         console.warn('❌ Refresh token invalid. Logging out...');
-        localStorage.removeItem('accessToken');
 
         window.location.href = '/login';
         return Promise.reject(error);
@@ -55,14 +51,16 @@ axiosInstance.interceptors.response.use(
         if (isRefreshing) {
             // If token is already being refreshed, queue the original request
             return new Promise(function(resolve, reject) {
-            failedQueue.push({ resolve, reject });
+              failedQueue.push({ resolve, reject });
             })
-            .then(token => {
-            originalRequest.headers['Authorization'] = `Bearer ${token}`;
-            return axiosInstance(originalRequest); // Retry with new token
+
+            .then(() => {
+              originalRequest._retry = true;
+              return axiosInstance(originalRequest); // Retry with new token
             })
             .catch(err => {
-            return Promise.reject(err); // Propagate error if queue processing fails
+              window.location.href = '/login';
+              return Promise.reject(err); // Propagate error if queue processing fails
             });
         }
 
@@ -79,27 +77,21 @@ axiosInstance.interceptors.response.use(
                 { withCredentials: true }  // ✅ Send cookies with this call
             );
 
-            const newAccessToken = refreshResponse.data?.data?.accessToken;
-
-            if (!newAccessToken) {
-                throw new Error('No new access token returned.');
-            }
-
-            console.log('New access token obtained:', newAccessToken); //DEBUG
-            localStorage.setItem('accessToken', newAccessToken);
-
-            // Update the default Authorization header for subsequent requests
-            axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${newAccessToken}`;
-            // Update the Authorization header for the original failed request
-            originalRequest.headers['Authorization'] = `Bearer ${newAccessToken}`;
-
-            processQueue(null, newAccessToken); // Process queued requests with the new token
+            processQueue(null, true); // Process queued requests with the new token
             return axiosInstance(originalRequest); // Retry the original request
         } catch (refreshError) {
-            console.error('Token refresh failed:', refreshError);
+            console.error('Token refresh failed:');
             processQueue(refreshError, null); // Reject queued requests
-            localStorage.removeItem('accessToken');
-            window.location.href = '/login'; // Simple redirect
+
+            const isAuthCheck = originalRequest.url === '/users/me';
+            const isExpectedFailureAfterLogout = !isAuthCheck && refreshError.response?.status === 401;
+
+            if (isExpectedFailureAfterLogout) {
+                 console.info('Expected token refresh failure after logout/no session. Redirecting to login.');
+                 window.location.href = '/login';
+            } else {
+              console.error('Token refresh error:', refreshError.message);
+            }
             
             return Promise.reject(refreshError);
         } finally {
