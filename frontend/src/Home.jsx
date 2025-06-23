@@ -6,6 +6,7 @@ import CreateDocketPage from './pages/CreateDocketPage';
 import GetDocket from './pages/GetDocket';
 import DocketDetailPage from './pages/DocketDetailPage';
 import UpdateDocketPage from './pages/UpdateDocketPage';
+import Header from './components/Header';
 
 export default function Home() {
 
@@ -13,6 +14,7 @@ export default function Home() {
       <div className="flex h-screen overflow-hidden">
         <Sidebar />
         <main className="flex-1 min-h-screen overflow-y-auto bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white">
+          <Header />
           <Routes>
             <Route path="/" element={<Dashboard />} />
             {/* Add more routes below as needed */}
