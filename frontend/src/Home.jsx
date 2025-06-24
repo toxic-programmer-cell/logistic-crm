@@ -7,6 +7,7 @@ import GetDocket from './pages/GetDocket';
 import DocketDetailPage from './pages/DocketDetailPage';
 import UpdateDocketPage from './pages/UpdateDocketPage';
 import Header from './components/Header';
+import Profile from './pages/Profile';
 
 export default function Home() {
 
@@ -22,6 +23,7 @@ export default function Home() {
             <Route path="/settings" element={<div className="p-6">settings</div>} />
             <Route path="/accounts" element={<div className="p-6">accounts</div>} />
             <Route path="/user" element={<div className="p-6">user</div>} />
+            <Route path="/profile" element={<Profile />} />
             <Route path="/reports" element={<div className="p-6">reports</div>} />
             <Route path="/dashboard/docket" element={<CreateDocketPage />} />
             <Route path="/dashboard/get-docket" element={<GetDocket />} />

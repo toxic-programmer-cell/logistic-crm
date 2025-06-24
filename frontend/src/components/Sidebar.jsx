@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeContext';
+// import { useTheme } from '../context/ThemeContext';
 
 const navLinks = [
   { icon: <HomeIcon size={20} />, label: 'Master', path: '/',
@@ -40,7 +40,7 @@ export default function Sidebar() {
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [hoveredItemIndex, setHoveredItemIndex] = useState(null);
   const { logout } = useAuth();
-  const { isDarkMode, toggleTheme } = useTheme();
+  // const { isDarkMode, toggleTheme } = useTheme();
 
   return (
     <nav
@@ -160,7 +160,7 @@ export default function Sidebar() {
           {!isCollapsed && <span className="ml-3">Logout</span>}
         </button>
 
-        <div className="flex items-center mt-4 justify-between">
+        {/* <div className="flex items-center mt-4 justify-between">
           {!isCollapsed && (
             <span className="text-sm text-gray-700 dark:text-gray-300">{isDarkMode ? 'Dark Mode' : 'Light Mode'}</span>
           )}
@@ -170,7 +170,7 @@ export default function Sidebar() {
           >
             {isDarkMode ? <SunIcon size={16} /> : <MoonIcon size={16} />}
           </button>
-        </div>
+        </div> */}
       </div>
     </nav>
   );
